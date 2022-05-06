@@ -44,7 +44,7 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
-
+from glue_distill_trainer import GlueDistillTrainer
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.9.0")
@@ -336,6 +336,14 @@ def main():
         use_auth_token=True if model_args.use_auth_token else None,
     )
 
+    teacher_model = None
+    if training_args.teacher is not None:
+        teacher_model = AutoModelForSequenceClassification.from_pretrained(
+            training_args.teacher,
+            from_tf=bool(".ckpt" in training_args.teacher),
+            cache_dir=model_args.cache_dir,
+        )
+
     # Preprocessing the raw_datasets
     if data_args.task_name is not None:
         sentence1_key, sentence2_key = task_to_keys[data_args.task_name]
@@ -462,16 +470,31 @@ def main():
     else:
         data_collator = None
 
-    # Initialize our Trainer
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset if training_args.do_train else None,
-        eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics=compute_metrics,
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-    )
+    if teacher_model is not None:
+        # Initialize our Trainer
+        trainer = GlueDistillTrainer(
+            teacher=teacher_model,
+            hardness=training_args.teacher_ratio,
+            temperature=training_args.distill_temp,
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset if training_args.do_train else None,
+            eval_dataset=eval_dataset if training_args.do_eval else None,
+            compute_metrics=compute_metrics,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+        )
+    else:
+        # Initialize our Trainer
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset if training_args.do_train else None,
+            eval_dataset=eval_dataset if training_args.do_eval else None,
+            compute_metrics=compute_metrics,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+        )
 
     # Training
     if training_args.do_train:
@@ -512,8 +535,8 @@ def main():
             )
             metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
 
-            trainer.log_metrics("eval", metrics)
-            trainer.save_metrics("eval", metrics)
+            trainer.log_metrics("eval_{}".format(task), metrics)
+            trainer.save_metrics("eval_{}".format(task), metrics)
 
     if training_args.do_predict:
         logger.info("*** Predict ***")
