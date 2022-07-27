@@ -1,0 +1,54 @@
+{
+    "input_info": [
+        {
+            "sample_size": [
+                1,
+                384
+            ],
+            "type": "long"
+        },
+        {
+            "sample_size": [
+                1,
+                384
+            ],
+            "type": "long"
+        },
+        {
+            "sample_size": [
+                1,
+                384
+            ],
+            "type": "long"
+        }
+    ],
+    "compression": [
+        {
+            "algorithm": "magnitude_sparsity",
+            "sparsity_init": 0.5,
+            "ignored_scopes": [
+                "{re}.*NNCFEmbedding",
+                "{re}.*qa_outputs*"
+            ]
+        },
+        {
+            "algorithm": "quantization",
+            "initializer": {
+                "range": {
+                    "num_init_samples": 4
+                },
+                "batchnorm_adaptation": {
+                    "num_bn_adaptation_samples": 2
+                }
+            },
+            "activations": {
+                "mode": "symmetric"
+            },
+            "weights": {
+                "mode": "symmetric",
+                "signed": true,
+                "per_channel": false
+            }
+        }
+    ]
+}
