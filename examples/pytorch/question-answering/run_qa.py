@@ -56,6 +56,8 @@ from nncf.config.structures import BNAdaptationInitArgs
 from nncf.config.structures import QuantizationRangeInitArgs
 from nncf.common.utils.tensorboard import prepare_for_tensorboard
 
+from transformers.vsutils.sparsity_reporter import SparsityReporter
+
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.9.0")
 
@@ -659,6 +661,18 @@ def main():
             if os.path.exists(onnx_pth):
                 import subprocess
                 subprocess.run(["mo", "--input_model", onnx_pth, "--model_name", os.path.basename(os.path.splitext(onnx_pth)[0]), "--output_dir", ir_dir], check=True)
+
+            df=SparsityReporter.per_item_sparsity(compression_ctrl.model.state_dict())
+            if model.get_nncf_wrapped_model().__class__.__name__ == 'BertForQuestionAnswering':
+                df=df[df.layer_id.str.contains("weight") & ~df.layer_id.str.contains("LayerNorm") & ~df.layer_id.str.contains("embeddings") & ~df.layer_id.str.contains("qa_outputs")]
+            elif model.get_nncf_wrapped_model().__class__.__name__ == 'DistilBertForQuestionAnswering':
+                df=df[df.layer_id.str.contains("weight") & ~df.layer_id.str.contains("layer_norm") & ~df.layer_id.str.contains("embeddings") & ~df.layer_id.str.contains("qa_outputs")]
+            linear_sparsity=1-df.nnz.sum()/df.nparam.sum()
+            
+            df.to_csv(
+                os.path.join(ir_dir, "linear_sparsity_{}%.csv".format(int(linear_sparsity*100))), index=False)
+            with open(os.path.join(ir_dir, "linear_sparsity_{}%.md".format(int(linear_sparsity*100))), 'w') as f:
+                df.to_markdown(f)
 
         else:
             def generate_input_names_list(num_inputs: int):

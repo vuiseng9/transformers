@@ -1364,7 +1364,7 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin, GenerationMixin, PushToHubMix
         elif from_pt:
             if nncf_config is not None and nncf_eval:
                 if 'nncf_ckpt' not in nncf_config: 
-                    model.load_state_dict(state_dict)
+                    model.load_state_dict(state_dict, strict=False)
                 compression_algo_controller, model = create_compressed_model(model, nncf_config,
                                                                              compression_state=None)
                 return compression_algo_controller, model
