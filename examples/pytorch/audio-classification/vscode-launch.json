@@ -5,12 +5,34 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "bert_onnx_mapper", 
+            // this model has been pretrained and released by official HF
+            // https://huggingface.co/bert-large-uncased-whole-word-masking-finetuned-squad
+            // f1 = 93.1584
+            // exact_match = 86.91
+            // eval_samples = 10784
+            "type": "python",
+            "request": "launch",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "2",
+                // "TORCH_DISTRIBUTED_DEBUG": "DETAIL",
+                // // "WANDB_MODE": "disabled",
+                // "WANDB_PROJECT": "dbg_sparsity_squad",
+                // "WANDB_WATCH": "false",
+            },
+            "cwd": "${workspaceFolder}/transformers/examples/pytorch/audio-classification/reporter",
+            "justMyCode": false,
+            "program": "bert_onnx_mapper.py",
+            "args": [
+            ]
+        },
+        {
             "name": "[dev] w2v2 keyword spotting", 
             "type": "python",
             "request": "launch",
             "justMyCode": false,
             "env": {
-                "CUDA_VISIBLE_DEVICES": "3",
+                "CUDA_VISIBLE_DEVICES": "0",
                 "TORCH_DISTRIBUTED_DEBUG": "DETAIL",
                 // "WANDB_MODE": "disabled",
                 "WANDB_PROJECT": "dev-w2v2opt",

@@ -348,6 +348,8 @@ def main():
     compression_ctrl = None
     if training_args.nncf_config is not None:
         nncf_config = NNCFAutoConfig.from_json(training_args.nncf_config)
+        if not os.path.exists(training_args.output_dir) and training_args.local_rank in [-1, 0]:
+            os.makedirs(training_args.output_dir, exist_ok=True)
         import shutil
         shutil.copy(training_args.nncf_config, training_args.output_dir)
 
@@ -366,7 +368,7 @@ def main():
         )
 
     g = model.get_graph()
-    g.dump_human_readable_graph(model, "w2v2_prune")
+    g.dump_human_readable_graph(model, "w2v2_human_readable")
 
     if teacher_model is not None:
         # Initialize our Trainer

@@ -7,27 +7,20 @@ export WANDB_API_KEY=f8a95080288950342f1695008cd8256adc3b0778
 
 # ---------------------------------------------------------------------------------------------
 export WANDB_PROJECT="w2v2opt-ks ($(hostname))"
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=0
 
 NEPOCH=12
-RUNID=run30b-w2v2b-ks-mvmt-bt-${NEPOCH}eph-start1-stop6-r0.10
-NNCFCFG=/data/vchua/dev/optimum-ov/transformers/examples/pytorch/audio-classification/cfg-nncf/nncf_w2v2b_ks_mvmt.json
-OUTROOT=/data/vchua/run/optimum-ov/w2v2b-ks/nncf-mvmt
+TEMPERATURE=2
+ALPHA=0.9
+RUNID=run33.6-w2v2b-ks-mvmt-bt-${NEPOCH}eph-warmup1-6-r0.10-t${TEMPERATURE}-alpha${ALPHA}
+NNCFCFG=/nvme1/vchua/dev/p3-w2v2/transformers/examples/pytorch/audio-classification/cfg-nncf/nncf_w2v2b_ks_mvmt.json
+OUTROOT=/nvme1/vchua/run/p3-w2v2/w2v2b-ks/nncf-mvmt
 
-# NEPOCH=30
-# RUNID=run10.2-w2v2b-ks-qat-${NEPOCH}eph-baseline
-# NNCFCFG=/data/vchua/dev/optimum-ov/optimum-openvino/optimum/intel/nncf/configs/nncf_wav2vec2_config.json
-# OUTROOT=/data/vchua/run/optimum-ov/w2v2b-ks
 
-# RUNID=run12b-w2v2b-ks-qat-${NEPOCH}eph-symm-act-signed-per-chl-w-ignoreFE
-# RUNID=run23-w2v2b-ks-qat-${NEPOCH}eph-symm-act-signed-per-chl-w-ignoreFE-customkd-bt-tratio0.9
-# NNCFCFG=/data/vchua/dev/optimum-ov/transformers/examples/pytorch/audio-classification/cfg-nncf/nncf_w2v2b_ks_qat.json
-# OUTROOT=/data/vchua/run/optimum-ov/w2v2b-ks
+WORKDIR=/nvme1/vchua/dev/p3-w2v2/transformers/examples/pytorch/audio-classification
 
-WORKDIR=/data/vchua/dev/optimum-ov/transformers/examples/pytorch/audio-classification
-
-CONDAROOT=/data/vchua/miniconda3
-CONDAENV=optimum-ov
+CONDAROOT=/nvme1/vchua/miniconda3
+CONDAENV=p3-w2v2
 # ---------------------------------------------------------------------------------------------
 
 OUTDIR=$OUTROOT/$RUNID
@@ -45,7 +38,8 @@ cd $WORKDIR
 cmd="
 python run_audio_classification.py \
     --teacher anton-l/wav2vec2-base-ft-keyword-spotting \
-    --teacher_ratio 0.9 \
+    --teacher_ratio $ALPHA \
+    --distill_temp $TEMPERATURE \
     --model_name_or_path anton-l/wav2vec2-base-ft-keyword-spotting \
     --dataset_name superb \
     --dataset_config_name ks \
