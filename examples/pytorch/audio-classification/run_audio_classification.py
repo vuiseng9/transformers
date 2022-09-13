@@ -26,7 +26,7 @@ import datasets
 import numpy as np
 from datasets import DatasetDict, load_dataset
 
-from optimum.intel.nncf import NNCFAutoConfig
+from nncf_auto import NNCFAutoConfig
 
 import transformers
 from transformers import (
@@ -155,6 +155,10 @@ class ModelArguments:
             "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
             "with private models)."
         },
+    )
+    manual_load: str = field(
+        default=None,
+        metadata={"help": "path to checkpoint that has been wrapped with nncf-mvmt-p3, assume checkpoint contains its corresponding nncf checkpoint"},
     )
     freeze_feature_extractor: Optional[bool] = field(
         default=None, metadata={"help": "Whether to freeze the feature extractor layers of the model."}
@@ -329,7 +333,7 @@ def main():
     if model_args.freeze_feature_encoder:
         model.freeze_feature_encoder()
 
-    if training_args.do_train:
+    if training_args.do_train or training_args.nncf_config is not None:
         if data_args.max_train_samples is not None:
             raw_datasets["train"] = (
                 raw_datasets["train"].shuffle(seed=training_args.seed).select(range(data_args.max_train_samples))
@@ -345,6 +349,11 @@ def main():
         # Set the validation transforms
         raw_datasets["eval"].set_transform(val_transforms, output_all_columns=False)
 
+    if model_args.manual_load is not None:
+        overriding_nncfcfg = os.path.join(model_args.manual_load, "corresponding_nncfcfg.json")
+        assert os.path.exists(overriding_nncfcfg), "Missing config {}".format(overriding_nncfcfg)
+        training_args.nncf_config = overriding_nncfcfg
+
     compression_ctrl = None
     if training_args.nncf_config is not None:
         nncf_config = NNCFAutoConfig.from_json(training_args.nncf_config)
@@ -359,6 +368,10 @@ def main():
             model, nncf_config, compression_state=compression_state
         )
 
+        if model_args.manual_load is not None:
+            import torch
+            model.load_state_dict(torch.load(os.path.join(model_args.manual_load, "pytorch_model.bin")))
+    
     teacher_model = None
     if training_args.teacher is not None:
         teacher_model = AutoModelForAudioClassification.from_pretrained(
@@ -398,7 +411,8 @@ def main():
         )
 
     # import torch
-    # trainer.model.load_state_dict(torch.load("/data/vchua/run/optimum-ov/w2v2b-ks/nncf-mvmt/run30-w2v2b-ks-mvmt-bt-10eph-start1-stop4-r0.04/checkpoint-1400/pytorch_model.bin"))
+    # trainer.model.load_state_dict(torch.load("/mnt/sh_flex_storage/home/yujiepan/workspace/2207.jpqd-ac/LOGS/ww36/0830.6ede-w2v2-jpqd-ct0-wr.05-nosig-globalLR-4ft-25epo-disable-overflowfix-warm1epo-lr2e-4/pytorch_model.bin"))
+    # compression_ctrl.export_model(os.path.join(training_args.output_dir, "quantized.onnx"))
     # Training
     if training_args.do_train:
         checkpoint = None
