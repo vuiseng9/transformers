@@ -842,28 +842,15 @@ class Trainer:
         Trainer's init through `optimizers`, or subclass and override this method in a subclass.
         """
         if self.optimizer is None:
-            score_params = []
-            for n, p in self.model.named_parameters():
-                if not p.requires_grad:
-                    continue
-                if "importance" in n:
-                    score_params.append(p)
-
             decay_parameters = get_parameter_names(self.model, [nn.LayerNorm])
             decay_parameters = [name for name in decay_parameters if "bias" not in name]
-            decay_parameters = [name for name in decay_parameters if "importance" not in name]
             optimizer_grouped_parameters = [
-                {
-                    "params": score_params,
-                    "weight_decay": 0.0,
-                    "lr": 0.01
-                },
                 {
                     "params": [p for n, p in self.model.named_parameters() if n in decay_parameters],
                     "weight_decay": self.args.weight_decay,
                 },
                 {
-                    "params": [p for n, p in self.model.named_parameters() if n not in decay_parameters and 'importance' not in n],
+                    "params": [p for n, p in self.model.named_parameters() if n not in decay_parameters],
                     "weight_decay": 0.0,
                 },
             ]
