@@ -160,6 +160,20 @@ class ModelArguments:
         default=None,
         metadata={"help": "path to checkpoint that has been wrapped with nncf-mvmt-p3, assume checkpoint contains its corresponding nncf checkpoint"},
     )
+    manual_crop: bool = field(
+        default=None,
+        metadata={"help": "realize physical dimension of model, depends on structured mask"},
+    )
+    # skip_quantize: bool = field(
+    #     default=False,
+    #     metadata={
+    #         "help": "skip copying of quantization pre ops; dependant on manual crop"
+    #     },
+    # )
+    gen_onnx: bool = field(
+        default=None,
+        metadata={"help": "generate onnx and openvino IR"},
+    )
     freeze_feature_extractor: Optional[bool] = field(
         default=None, metadata={"help": "Whether to freeze the feature extractor layers of the model."}
     )
@@ -333,7 +347,7 @@ def main():
     if model_args.freeze_feature_encoder:
         model.freeze_feature_encoder()
 
-    if training_args.do_train or training_args.nncf_config is not None:
+    if training_args.do_train or training_args.nncf_config is not None or model_args.manual_load is not None:
         if data_args.max_train_samples is not None:
             raw_datasets["train"] = (
                 raw_datasets["train"].shuffle(seed=training_args.seed).select(range(data_args.max_train_samples))
@@ -351,7 +365,7 @@ def main():
 
     if model_args.manual_load is not None:
         overriding_nncfcfg = os.path.join(model_args.manual_load, "corresponding_nncfcfg.json")
-        assert os.path.exists(overriding_nncfcfg), "Missing config {}".format(overriding_nncfcfg)
+        assert os.path.exists(overriding_nncfcfg), "Missing config {}, pls copy or link the nncf cfg of the ckpt".format(overriding_nncfcfg)
         training_args.nncf_config = overriding_nncfcfg
 
     compression_ctrl = None
@@ -371,7 +385,61 @@ def main():
         if model_args.manual_load is not None:
             import torch
             model.load_state_dict(torch.load(os.path.join(model_args.manual_load, "pytorch_model.bin")))
-    
+
+            if model_args.manual_crop is True:
+                from manual_crop import W2V2Cropper
+                cropper = W2V2Cropper()
+                model = cropper(compression_ctrl, model, training_args)
+
+    # GEN_ONNX_AT_END = False
+    if model_args.gen_onnx is True:
+        ir_dir = os.path.join(training_args.output_dir, "ir")
+        os.makedirs(ir_dir, exist_ok=True)
+
+        if nncf_config is not None:
+            mvmt_ctrl = None
+            is_quantized = False
+            if hasattr(compression_ctrl, 'child_ctrls'):
+                for ctrl in compression_ctrl.child_ctrls:
+                    if ctrl.__class__.__name__ == 'QuantizationController':
+                        is_quantized=True
+                        for k, wqinfo in ctrl.weight_quantizers.items():
+                            assert wqinfo.quantizer_module_ref.per_channel == False, "Per-channel wt.q {}".format(k.target_node_name)
+                        for k, aqinfo in ctrl.non_weight_quantizers.items():
+                            assert aqinfo.quantizer_module_ref.per_channel == False, "Per-channel act.q {}".format(k.target_node_name)
+                    elif ctrl.__class__.__name__ == 'MovementSparsityController':
+                        mvmt_ctrl = ctrl
+            elif compression_ctrl.__class__.__name__ == 'MovementSparsityController':
+                mvmt_ctrl = compression_ctrl
+            elif compression_ctrl.__class__.__name__ == 'QuantizationController':
+                is_quantized = True
+
+            model_label = "{}-{}".format(data_args.dataset_name, model.get_nncf_wrapped_model().__class__.__name__)
+            if is_quantized is True:
+                onnx_pth = os.path.join(ir_dir, '{}.8bit.onnx'.format(model_label))
+            else:
+                onnx_pth = os.path.join(ir_dir, '{}.fp32.onnx'.format(model_label))
+            compression_ctrl.export_model(onnx_pth)
+
+        else:
+            def generate_input_names_list(num_inputs: int):
+                return [f'input.{idx}' for idx in range(0, num_inputs)]
+
+            model.to('cpu')
+            # import torch
+            # from torch import onnx
+            model_label = "{}-{}".format(data_args.dataset_name, model.__class__.__name__)
+            onnx_pth = os.path.join(ir_dir, '{}.dense.fp32.onnx'.format(model_label))
+
+            dummy_tensor = torch.ones([1, 16000])
+            torch.onnx.export(model, dummy_tensor, onnx_pth, 
+                        input_names=generate_input_names_list(1), opset_version=10)
+
+        if os.path.exists(onnx_pth):
+            import subprocess
+            subprocess.run(["mo", "--input_model", onnx_pth, "--model_name", os.path.basename(os.path.splitext(onnx_pth)[0]), "--output_dir", ir_dir], check=True)
+        exit()
+
     teacher_model = None
     if training_args.teacher is not None:
         teacher_model = AutoModelForAudioClassification.from_pretrained(
@@ -410,9 +478,6 @@ def main():
             compression_ctrl=compression_ctrl
         )
 
-    # import torch
-    # trainer.model.load_state_dict(torch.load("/mnt/sh_flex_storage/home/yujiepan/workspace/2207.jpqd-ac/LOGS/ww36/0830.6ede-w2v2-jpqd-ct0-wr.05-nosig-globalLR-4ft-25epo-disable-overflowfix-warm1epo-lr2e-4/pytorch_model.bin"))
-    # compression_ctrl.export_model(os.path.join(training_args.output_dir, "quantized.onnx"))
     # Training
     if training_args.do_train:
         checkpoint = None
