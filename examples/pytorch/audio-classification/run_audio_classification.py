@@ -448,8 +448,9 @@ def main():
             cache_dir=model_args.cache_dir,
         )
 
-    g = model.get_graph()
-    g.dump_human_readable_graph(model, "w2v2_human_readable")
+    if compression_ctrl is not None:
+        g = model.get_graph()
+        g.dump_human_readable_graph(model, "{}/w2v2_human_readable.dot".format(training_args.output_dir))
 
     if teacher_model is not None:
         # Initialize our Trainer
