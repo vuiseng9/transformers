@@ -1,4 +1,6 @@
 datasets>=1.14.0
 librosa
+tabulate
+wandb
 #torchaudio
 #torch>=1.6
