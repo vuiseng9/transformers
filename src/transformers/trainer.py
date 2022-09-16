@@ -301,8 +301,8 @@ class Trainer:
         if nncf_config is not None and compression_ctrl is not None:
             raise ValueError("nncf_config and compression_ctrl must be mutually exclusive")
         
-        if compression_ctrl is not None:
-            self.compression_ctrl = compression_ctrl
+        
+        self.compression_ctrl = compression_ctrl
 
         if nncf_config is not None:
             nncf_config.auto_register_extra_structs(args, train_dataset, data_collator)
