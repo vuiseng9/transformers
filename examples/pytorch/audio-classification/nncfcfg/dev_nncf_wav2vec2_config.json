@@ -23,8 +23,8 @@
             "params": {
                 "schedule": "threshold_polynomial_decay",
                 "power": 3,
-                "init_importance_threshold": 0.0,
-                "final_importance_threshold": 3,
+                "init_importance_threshold": -1.0,
+                "final_importance_threshold": 0,
                 "warmup_start_epoch": 0,
                 "warmup_end_epoch": 0.01,
                 "steps_per_epoch": 399,
