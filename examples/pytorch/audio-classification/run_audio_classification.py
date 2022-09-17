@@ -373,9 +373,12 @@ def main():
         nncf_config = NNCFAutoConfig.from_json(training_args.nncf_config)
         if not os.path.exists(training_args.output_dir) and training_args.local_rank in [-1, 0]:
             os.makedirs(training_args.output_dir, exist_ok=True)
+
         import shutil
         shutil.copy(training_args.nncf_config, training_args.output_dir)
 
+        model.gradient_checkpointing_disable()
+        
         nncf_config.auto_register_extra_structs(training_args, raw_datasets["train"], None)
         compression_state = None
         compression_ctrl, model = create_compressed_model(
@@ -450,7 +453,7 @@ def main():
 
     if compression_ctrl is not None:
         g = model.get_graph()
-        g.dump_human_readable_graph(model, "{}/w2v2_human_readable.dot".format(training_args.output_dir))
+        g.dump_human_readable_graph(model, "{}/w2v2_nncf_human_readable.dot".format(training_args.output_dir))
 
     if teacher_model is not None:
         # Initialize our Trainer
