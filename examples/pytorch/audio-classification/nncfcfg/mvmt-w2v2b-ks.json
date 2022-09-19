@@ -1,0 +1,37 @@
+{
+    "input_info": [
+        {
+            "sample_size": [1, 16000],
+            "type": "float"
+        }
+    ],
+    "ignored_scopes": [
+        "{re}.*feature_extractor.*", 
+        "{re}.*feature_projection.*", 
+        "{re}.*pos_conv_embed.*",
+        "{re}.*projector.*",
+        "{re}.*classifier.*",
+    ],
+    "compression": 
+    [
+        {
+            "algorithm": "movement_sparsity",
+            "params": {
+                "schedule": "threshold_polynomial_decay",
+                "power": 3,
+                "init_importance_threshold": 0.0,
+                "final_importance_threshold": 0.5,
+                "warmup_start_epoch": 5,
+                "warmup_end_epoch": 10,
+                "steps_per_epoch": 399,
+                "importance_regularization_factor": 0.50,
+                "update_per_optimizer_step": true,
+            },
+            "sparse_structure_by_scopes": [
+                ["block", [32, 32], "{re}.*Wav2Vec2Attention*"],
+                ["per_dim", [0], "{re}.*intermediate_dense*"],
+                ["per_dim", [1], "{re}.*output_dense*"],
+            ],
+        },
+    ]
+}
