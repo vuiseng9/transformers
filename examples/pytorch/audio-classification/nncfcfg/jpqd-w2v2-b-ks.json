@@ -5,13 +5,6 @@
       "type": "float"
     }
   ],
-  "ignored_scopes": [
-    "{re}.*feature_extractor.*", 
-    "{re}.*feature_projection.*", 
-    "{re}.*projector.*",
-    "{re}.*classifier.*",
-    "{re}.*pos_conv_embed.*",
-  ],
   "compression": [
       {
         "algorithm": "movement_sparsity",
@@ -31,16 +24,23 @@
             ["per_dim", [0], "{re}.*intermediate_dense*"],
             ["per_dim", [1], "{re}.*output_dense*"],
         ],
+        "ignored_scopes": [
+          "{re}.*feature_extractor.*", 
+          "{re}.*feature_projection.*", 
+          "{re}.*projector.*",
+          "{re}.*classifier.*",
+          "{re}.*pos_conv_embed.*",
+        ],
     },
     {
       "algorithm": "quantization",
       "quantize_inputs": false,
       "ignored_scopes": [
           "{re}.*feature_extractor.*", 
-          "{re}.*feature_projection.*", 
-          "{re}.*pos_conv_embed.*",
-          "{re}.*projector.*",
-          "{re}.*classifier.*",
+          // "{re}.*feature_projection.*", 
+          // "{re}.*pos_conv_embed.*",
+          // "{re}.*projector.*",
+          // "{re}.*classifier.*",
       ],
       "initializer": {
           "range": {

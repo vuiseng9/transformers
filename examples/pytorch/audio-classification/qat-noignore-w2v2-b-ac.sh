@@ -13,7 +13,7 @@ NEPOCH=5
 BS=64
 GA=2
 LR=3e-5
-RUNID=qat-ft-noignore-w2v2-b-ks-bs${BS}-${NEPOCH}eph-$LR
+RUNID=qat-ft-noignore-w2v2-b-ks-bs${BS}-${NEPOCH}eph-$LR-except-FE
 
 NNCFCFG=/data2/vchua/dev/w2v2-ion/transformers/examples/pytorch/audio-classification/nncfcfg/qat-noignore-w2v2-b.json
 OUTROOT=/data1/vchua/run/w2v2-ion/w2v2b-ks/

@@ -9,12 +9,12 @@ export WANDB_API_KEY=f8a95080288950342f1695008cd8256adc3b0778
 export WANDB_PROJECT="w2v2opt-ks (dgx4)"
 export CUDA_VISIBLE_DEVICES=0
 
-NEPOCH=15
+NEPOCH=25
 BS=64
 GA=2
 LR=3e-5
 ALPHA=0.9
-RUNID=jpqd-ft-w2v2-b-ks-bs${BS}-${NEPOCH}eph-$LR-r0.50-sigmoid-wu5-10
+RUNID=jpqd-ft-w2v2-b-ks-bs${BS}-${NEPOCH}eph-$LR-r0.50-sigmoid-wu5-10-q-except-FE
 
 NNCFCFG=/data2/vchua/dev/w2v2-ion/transformers/examples/pytorch/audio-classification/nncfcfg/jpqd-w2v2-b-ks.json
 OUTROOT=/data1/vchua/run/w2v2-ion/w2v2b-ks/

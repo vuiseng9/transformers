@@ -5,20 +5,13 @@
             "type": "float"
         }
     ],
-    "ignored_scopes": [
-        // "{re}.*feature_extractor.*", 
-        // "{re}.*feature_projection.*", 
-        // "{re}.*pos_conv_embed.*",
-        "{re}.*projector.*",
-        "{re}.*classifier.*",
-    ],
     "compression": {
         "algorithm": "quantization",
         "quantize_inputs": false,
         "ignored_scopes": [
             "{re}.*feature_extractor.*", 
-            "{re}.*feature_projection.*", 
-            "{re}.*pos_conv_embed.*",
+            // "{re}.*feature_projection.*", 
+            // "{re}.*pos_conv_embed.*",
             // "{re}.*projector.*",
             // "{re}.*classifier.*",
         ],

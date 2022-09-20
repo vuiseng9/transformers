@@ -9,11 +9,12 @@ export WANDB_API_KEY=f8a95080288950342f1695008cd8256adc3b0778
 export WANDB_PROJECT="w2v2opt-ks (dgx4)"
 export CUDA_VISIBLE_DEVICES=0
 
-NEPOCH=15
+NEPOCH=25
 BS=64
 GA=2
 LR=3e-5
-RUNID=mvmt-ft-w2v2-b-ks-bs${BS}-${NEPOCH}eph-$LR-r0.50
+ALPHA=0.9
+RUNID=mvmt-ft-w2v2-b-ks-bs${BS}-${NEPOCH}eph-$LR-r0.50-sigmoid-wu5-10
 
 NNCFCFG=/data2/vchua/dev/w2v2-ion/transformers/examples/pytorch/audio-classification/nncfcfg/mvmt-w2v2b-ks.json
 OUTROOT=/data1/vchua/run/w2v2-ion/w2v2b-ks/
@@ -35,15 +36,12 @@ mkdir -p $OUTDIR
 cd $WORKDIR
     # --lr_scheduler_type cosine_with_restarts \
     # --distill_temp $TEMPERATURE \
-    # --load_best_model_at_end True \
-    # --teacher anton-l/wav2vec2-base-ft-keyword-spotting \
-    # --model_name_or_path facebook/wav2vec2-base \
-    # --save_total_limit 3 \
-    # --teacher_ratio $ALPHA \
 
 cmd="
 python run_audio_classification.py \
     --model_name_or_path facebook/wav2vec2-base \
+    --teacher anton-l/wav2vec2-base-ft-keyword-spotting \
+    --teacher_ratio $ALPHA \
     --dataset_name superb \
     --dataset_config_name ks \
     --remove_unused_columns False \

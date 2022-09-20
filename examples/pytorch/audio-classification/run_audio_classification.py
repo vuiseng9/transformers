@@ -399,7 +399,7 @@ def main():
         ir_dir = os.path.join(training_args.output_dir, "ir")
         os.makedirs(ir_dir, exist_ok=True)
 
-        if nncf_config is not None:
+        if training_args.nncf_config is not None:
             mvmt_ctrl = None
             is_quantized = False
             if hasattr(compression_ctrl, 'child_ctrls'):
@@ -429,7 +429,7 @@ def main():
                 return [f'input.{idx}' for idx in range(0, num_inputs)]
 
             model.to('cpu')
-            # import torch
+            import torch
             # from torch import onnx
             model_label = "{}-{}".format(data_args.dataset_name, model.__class__.__name__)
             onnx_pth = os.path.join(ir_dir, '{}.dense.fp32.onnx'.format(model_label))
