@@ -33,7 +33,7 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_clip import CLIPConfig, CLIPTextConfig, CLIPVisionConfig
-
+from torchinfo.benchutils import timeit
 
 logger = logging.get_logger(__name__)
 
@@ -704,6 +704,7 @@ class CLIPTextModel(CLIPPreTrainedModel):
 
     @add_start_docstrings_to_model_forward(CLIP_TEXT_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=BaseModelOutputWithPooling, config_class=CLIPTextConfig)
+    @timeit
     def forward(
         self,
         input_ids: Optional[torch.Tensor] = None,
