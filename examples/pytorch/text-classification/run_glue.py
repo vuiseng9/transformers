@@ -201,7 +201,12 @@ class ModelArguments:
         default=False,
         metadata={"help": "Will enable to load a pretrained model whose head dimensions are different."},
     )
-
+    lora: bool = field(
+        default=False,
+        metadata={
+            "help": "enable lora"
+        },
+    )
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -512,6 +517,25 @@ def main():
         data_collator = DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
     else:
         data_collator = None
+
+    if model_args.lora is True:
+        from peft import (
+            get_peft_config,
+            get_peft_model,
+            get_peft_model_state_dict,
+            set_peft_model_state_dict,
+            LoraConfig,
+            PeftType,
+            PrefixTuningConfig,
+            PromptEncoderConfig,
+        )
+
+        # Hard-coding for now
+        peft_config = LoraConfig(task_type="SEQ_CLS", inference_mode=False, r=8, lora_alpha=8, lora_dropout=0.1)
+
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
+        print("joto")
 
     # Initialize our Trainer
     trainer = Trainer(
