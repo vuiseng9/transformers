@@ -207,6 +207,40 @@ class ModelArguments:
             "help": "enable lora"
         },
     )
+    dms: bool = field(
+        default=False,
+        metadata={
+            "help": "enable lora"
+        },
+    )
+    ftsubset: bool = field(
+        default=False,
+        metadata={
+            "help": "enable lora"
+        },
+    )
+
+def print_trainable_parameters(model, prefix=None, layerwise=False):
+    """
+    Prints the number of trainable parameters in the model.
+    """
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        num_params = param.numel()
+        # if using DS Zero 3 and the weights are initialized empty
+        if num_params == 0 and hasattr(param, "ds_numel"):
+            num_params = param.ds_numel
+
+        all_param += num_params
+        if param.requires_grad:
+            if layerwise is True:
+                print(f"\t{num_params:10} | {_}")
+            trainable_params += num_params
+    print(
+        f"{prefix} trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
+    )
+
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -517,6 +551,32 @@ def main():
         data_collator = DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
     else:
         data_collator = None
+
+    if int(model_args.lora) + int(model_args.dms) + int(model_args.ftsubset) > 1:
+        raise ValueError("--lora, --dms, --ftsubset are mutually exclusive")
+
+    if model_args.ftsubset is True:
+        print_trainable_parameters(model, prefix="FullFT", layerwise=True)
+
+        params_to_train = [
+            "roberta.encoder.layer.6.intermediate.dense.weight",
+            "roberta.encoder.layer.6.intermediate.dense.bias",
+            "roberta.encoder.layer.6.output.dense.weight",
+            "roberta.encoder.layer.6.output.dense.bias",
+            "roberta.encoder.layer.7.intermediate.dense.weight",
+            "roberta.encoder.layer.7.intermediate.dense.bias",
+            "roberta.encoder.layer.7.output.dense.weight",
+            "roberta.encoder.layer.7.output.dense.bias",
+            "roberta.encoder.layer.8.intermediate.dense.weight",
+            "roberta.encoder.layer.8.intermediate.dense.bias",
+            "roberta.encoder.layer.8.output.dense.weight",
+            "roberta.encoder.layer.8.output.dense.bias"]
+        
+        for param_name, param in model.named_parameters():
+            if param_name not in params_to_train:
+                param.requires_grad = False
+
+        print_trainable_parameters(model, prefix="SubsetFT", layerwise=True)
 
     if model_args.lora is True:
         from peft import (
