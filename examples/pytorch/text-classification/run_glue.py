@@ -559,24 +559,87 @@ def main():
         print_trainable_parameters(model, prefix="FullFT", layerwise=True)
 
         params_to_train = [
-            "roberta.encoder.layer.6.intermediate.dense.weight",
-            "roberta.encoder.layer.6.intermediate.dense.bias",
-            "roberta.encoder.layer.6.output.dense.weight",
-            "roberta.encoder.layer.6.output.dense.bias",
-            "roberta.encoder.layer.7.intermediate.dense.weight",
-            "roberta.encoder.layer.7.intermediate.dense.bias",
-            "roberta.encoder.layer.7.output.dense.weight",
-            "roberta.encoder.layer.7.output.dense.bias",
-            "roberta.encoder.layer.8.intermediate.dense.weight",
-            "roberta.encoder.layer.8.intermediate.dense.bias",
-            "roberta.encoder.layer.8.output.dense.weight",
-            "roberta.encoder.layer.8.output.dense.bias"]
+            "encoder.layer.6.intermediate.dense.weight",
+            "encoder.layer.6.intermediate.dense.bias",
+            "encoder.layer.6.output.dense.weight",
+            "encoder.layer.6.output.dense.bias",
+            "encoder.layer.7.intermediate.dense.weight",
+            "encoder.layer.7.intermediate.dense.bias",
+            "encoder.layer.7.output.dense.weight",
+            "encoder.layer.7.output.dense.bias",
+            "encoder.layer.8.intermediate.dense.weight",
+            "encoder.layer.8.intermediate.dense.bias",
+            "encoder.layer.8.output.dense.weight",
+            "encoder.layer.8.output.dense.bias"]
         
-        for param_name, param in model.named_parameters():
+        # NOTE: we wanna keep classifier layer to learn!
+        for param_name, param in model.roberta.named_parameters():
             if param_name not in params_to_train:
                 param.requires_grad = False
 
         print_trainable_parameters(model, prefix="SubsetFT", layerwise=True)
+
+    if model_args.dms is True:
+        print_trainable_parameters(model, prefix="FullFT", layerwise=True)
+
+        # freeze all parameters except classifiers
+        for param_name, param in model.roberta.named_parameters():
+            param.requires_grad = False
+
+        import torch
+        from functools import partial
+
+        def create_posthook_func(target_layer):
+            def post_hook(module, args, output, post_layer):
+                return post_layer(output) 
+
+            target_layer.post_dense = torch.nn.Linear(
+                target_layer.dense.out_features,
+                target_layer.dense.out_features//2
+            )
+            return partial(post_hook, post_layer=target_layer.post_dense)
+
+        layers_to_add_posthook = [
+            model.roberta.encoder.layer[6].intermediate,
+            model.roberta.encoder.layer[7].intermediate,
+            model.roberta.encoder.layer[8].intermediate,
+        ]
+
+        posthook_list = []
+        for layer in layers_to_add_posthook:
+            posthook_list.append(
+                layer.register_forward_hook(
+                    create_posthook_func(layer)
+                )
+            )
+
+        # ------------------------------------------------------------
+        def create_prehook_func(target_layer):
+            def pre_hook(module, args, pre_layer):
+                return pre_layer(args[0]), args[1] 
+
+            target_layer.pre_dense = torch.nn.Linear(
+                target_layer.dense.in_features//2,
+                target_layer.dense.in_features
+            )
+            return partial(pre_hook, pre_layer=target_layer.pre_dense)
+        
+        layers_to_add_prehook = [
+            model.roberta.encoder.layer[6].output,
+            model.roberta.encoder.layer[7].output,
+            model.roberta.encoder.layer[8].output,
+        ]
+
+        prehook_list = []
+        for layer in layers_to_add_prehook:
+            prehook_list.append(
+                layer.register_forward_pre_hook(
+                    create_prehook_func(layer)
+                )
+            )
+        
+        print_trainable_parameters(model, prefix="DMS-FT", layerwise=True)
+
 
     if model_args.lora is True:
         from peft import (

@@ -10,8 +10,9 @@ export WANDB_PROJECT="dms ($(hostname))"
 export CUDA_VISIBLE_DEVICES=0
 
 NEPOCH=3
+LR=3e-5
 
-RUNID=run000-ft-sst2-roberta-b-${NEPOCH}eph
+RUNID=run000-dms-sst2-roberta-b-${NEPOCH}eph-lr${LR}
 OUTROOT=/data5/vchua/run/dms-poc/roberta-b-sst2
 WORKDIR=/data5/vchua/dev/dms-poc/transformers/examples/pytorch/text-classification
 
@@ -39,8 +40,9 @@ python run_glue.py \
     --per_device_eval_batch_size 128 \
     --do_train \
     --per_device_train_batch_size 16 \
-    --learning_rate 3e-5 \
+    --learning_rate $LR \
     --fp16 \
+    --dms \
     --num_train_epochs $NEPOCH \
     --logging_steps 1 \
     --evaluation_strategy steps \
