@@ -50,7 +50,7 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_bert import BertConfig
-
+from .sparsemax import Sparsemax
 
 logger = logging.get_logger(__name__)
 
@@ -267,6 +267,14 @@ class BertSelfAttention(nn.Module):
 
         self.is_decoder = config.is_decoder
 
+        if hasattr(config, "use_sparsemax"):
+            self.use_sparsemax = config.use_sparsemax
+        else:
+            self.use_sparsemax = False
+        
+        if self.use_sparsemax:
+            self.sparsemax_fn = Sparsemax(dim=-1)
+        
     def transpose_for_scores(self, x: torch.Tensor) -> torch.Tensor:
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(new_x_shape)
@@ -344,7 +352,10 @@ class BertSelfAttention(nn.Module):
             attention_scores = attention_scores + attention_mask
 
         # Normalize the attention scores to probabilities.
-        attention_probs = nn.functional.softmax(attention_scores, dim=-1)
+        if self.use_sparsemax:
+            attention_probs = self.sparsemax_fn(attention_scores)
+        else:
+            attention_probs = nn.functional.softmax(attention_scores, dim=-1)
 
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
