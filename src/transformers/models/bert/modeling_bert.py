@@ -329,6 +329,24 @@ class BertSelfAttention(nn.Module):
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
+        if hasattr(self, "analyze_sparsity") and hasattr(self, "sparsity_fn") and hasattr(self, "sparsity_registry"):
+            bmm_key = self.full_name+'.bmm1'
+            
+            q_sparsity, q_shape = self.sparsity_fn(query_layer, wt_shape=True)
+            self.sparsity_registry[bmm_key]['x1_sparsity'].append(q_sparsity)
+            self.sparsity_registry[bmm_key]['x1_shape'].append(q_shape)
+                        
+            k_sparsity, k_shape = self.sparsity_fn(key_layer, wt_shape=True)
+            self.sparsity_registry[bmm_key]['x2_sparsity'].append(k_sparsity)
+            self.sparsity_registry[bmm_key]['x2_shape'].append(k_shape)
+
+            qk_sparsity, qk_shape = self.sparsity_fn(attention_scores, wt_shape=True)
+            self.sparsity_registry[bmm_key]['y_sparsity'].append(qk_sparsity)
+            self.sparsity_registry[bmm_key]['y_shape'].append(qk_shape)
+
+            # print(f"Q  : {str(q_shape):20}, {q_sparsity:.4f}% | {bmm_key}")
+            # print(f"K  : {str(k_shape):20}, {k_sparsity:.4f}% | {bmm_key}")
+            # print(f"QKT: {str(qk_shape):20}, {qk_sparsity:.4f}% | {bmm_key}")
 
         if self.position_embedding_type == "relative_key" or self.position_embedding_type == "relative_key_query":
             seq_length = hidden_states.size()[1]
@@ -366,6 +384,24 @@ class BertSelfAttention(nn.Module):
             attention_probs = attention_probs * head_mask
 
         context_layer = torch.matmul(attention_probs, value_layer)
+        if hasattr(self, "analyze_sparsity") and hasattr(self, "sparsity_fn") and hasattr(self, "sparsity_registry"):
+            bmm_key = self.full_name+'.bmm2'
+
+            as_sparsity, as_shape = self.sparsity_fn(attention_probs, wt_shape=True)
+            self.sparsity_registry[bmm_key]['x1_sparsity'].append(as_sparsity)
+            self.sparsity_registry[bmm_key]['x1_shape'].append(as_shape)
+
+            v_sparsity, v_shape = self.sparsity_fn(value_layer, wt_shape=True)
+            self.sparsity_registry[bmm_key]['x2_sparsity'].append(v_sparsity)
+            self.sparsity_registry[bmm_key]['x2_shape'].append(v_shape)
+
+            c_sparsity, c_shape = self.sparsity_fn(context_layer, wt_shape=True)
+            self.sparsity_registry[bmm_key]['y_sparsity'].append(c_sparsity)
+            self.sparsity_registry[bmm_key]['y_shape'].append(c_shape)
+
+            # print(f"AS : {str(as_shape):20}, {as_sparsity:.4f}% | {bmm_key}")
+            # print(f"V  : {str(v_shape):20}, {v_sparsity:.4f}% | {bmm_key}")
+            # print(f"C  : {str(v_shape):20}, {v_sparsity:.4f}% | {bmm_key}")
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
