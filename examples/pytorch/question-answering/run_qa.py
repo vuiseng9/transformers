@@ -92,6 +92,10 @@ class ModelArguments:
         default=False,
         metadata={"help": "generate sparsity distribution report for each dot product, only works in eval mode"},
     )
+    attn_sparsity_only: bool = field(
+        default=False,
+        metadata={"help": "dependent on --analyze_sparsity, ignore all sparsity analysis except attention scores"},
+    )
     sparsemax: bool = field(
         default=False,
         metadata={
@@ -633,27 +637,30 @@ def main():
             modname_to_modtype[m.full_name] = m.class_name
             modname_to_module[m.full_name] = m
 
-        denseoi_layers = []
-        hooklist = []
-        for layer in modtype_to_modlist['Linear']:
-            if 'encoder' in layer:
-                denseoi_layers.append(layer)
+        if model_args.attn_sparsity_only is False:
+            denseoi_layers = []
+            hooklist = []
+            for layer in modtype_to_modlist['Linear']:
+                if 'encoder' in layer:
+                    denseoi_layers.append(layer)
 
-                mod = modname_to_module[layer]
-                hooklist.append(
-                    mod.register_forward_hook(
-                        create_sparsity_analyzer_hook(mod, per_linear_op_sparsity_dict)
+                    mod = modname_to_module[layer]
+                    hooklist.append(
+                        mod.register_forward_hook(
+                            create_sparsity_analyzer_hook(mod, per_linear_op_sparsity_dict)
+                        )
                     )
-                )
 
         # NOTE: hardcoding
         attn_module_class = 'BertSelfAttention'
         for each_attn in modtype_to_modlist[attn_module_class]:
             attn_mod = modname_to_module[each_attn]
-            attn_mod.analyze_sparsity = True
+            attn_mod.analyze_sparsity = model_args.analyze_sparsity # although it will always be true if the program gets here
+            attn_mod.attn_sparsity_only = model_args.attn_sparsity_only
             attn_mod.sparsity_fn = calc_sparsity_by_head
             attn_mod.sparsity_registry = per_batch_gemm_op_sparsity_dict
-            attn_mod.sparsity_registry[each_attn+'.bmm1'] = defaultdict(list)
+            if model_args.attn_sparsity_only is False:
+                attn_mod.sparsity_registry[each_attn+'.bmm1'] = defaultdict(list)
             attn_mod.sparsity_registry[each_attn+'.bmm2'] = defaultdict(list)
 
 
@@ -719,20 +726,28 @@ def main():
                     row[f'{colname}_{k}'] = summary[k]
                 return row
 
-            linear_df = pd.DataFrame.from_dict(per_linear_op_sparsity_dict).T
-            for shape_col in ['x_shape', 'y_shape']:
-                linear_df[shape_col] = linear_df.apply(partial(check_and_return_unique_entry, colname=shape_col), axis=1)
-            for sparsity_col in ['x_sparsity', 'y_sparsity']:
-                linear_df = linear_df.apply(partial(summarize_sparsity, colname=sparsity_col), axis=1).drop(columns=[sparsity_col])
+            if model_args.attn_sparsity_only is False:
+                linear_df = pd.DataFrame.from_dict(per_linear_op_sparsity_dict).T
+                for shape_col in ['x_shape', 'y_shape']:
+                    linear_df[shape_col] = linear_df.apply(partial(check_and_return_unique_entry, colname=shape_col), axis=1)
+                for sparsity_col in ['x_sparsity', 'y_sparsity']:
+                    linear_df = linear_df.apply(partial(summarize_sparsity, colname=sparsity_col), axis=1).drop(columns=[sparsity_col])
 
             bmm_df = pd.DataFrame.from_dict(per_batch_gemm_op_sparsity_dict).T
-            for shape_col in ['x1_shape', 'x2_shape', 'y_shape']:
+            shape_col_list = ['x1_shape', 'x2_shape', 'y_shape']
+            sparsity_col_list = ['x1_sparsity', 'x2_sparsity', 'y_sparsity']
+            if model_args.attn_sparsity_only is True:
+                shape_col_list = ['x1_shape']
+                sparsity_col_list = ['x1_sparsity']
+            for shape_col in shape_col_list:
                 bmm_df[shape_col] = bmm_df.apply(partial(check_and_return_unique_entry, colname=shape_col), axis=1)
-            for sparsity_col in ['x1_sparsity', 'x2_sparsity', 'y_sparsity']:
+            for sparsity_col in sparsity_col_list:
                 bmm_df = bmm_df.apply(partial(summarize_sparsity, colname=sparsity_col), axis=1).drop(columns=[sparsity_col])
 
             # Serialization
             SPARSEDIR = os.path.join(training_args.output_dir, "sparsity_analysis")
+            if model_args.attn_sparsity_only is True:
+                SPARSEDIR += '_attn_only' 
             uuid = str(uuid.uuid4())[:6]
 
             os.makedirs(SPARSEDIR, exist_ok=True)
@@ -744,12 +759,16 @@ def main():
 
             config.to_json_file(os.path.join(SPARSEDIR, "config.json"))
 
-            linear_df.to_csv(os.path.join(SPARSEDIR, f"{uuid}_linear_matmul_sparsity.csv"), index_label='linear_matmul')
-            bmm_df.to_csv(os.path.join(SPARSEDIR, f"{uuid}_batch_matmul_sparsity.csv"), index_label='batched_matmul')
-
             import torch
-            torch.save(per_linear_op_sparsity_dict, os.path.join(SPARSEDIR, f"{uuid}_per_linear_op_sparsity_dict.pth"))
+            if model_args.attn_sparsity_only is False:
+                linear_df.to_csv(os.path.join(SPARSEDIR, f"{uuid}_linear_matmul_sparsity.csv"), index_label='linear_matmul')
+                torch.save(per_linear_op_sparsity_dict, os.path.join(SPARSEDIR, f"{uuid}_per_linear_op_sparsity_dict.pth"))
+
+            bmm_df.to_csv(os.path.join(SPARSEDIR, f"{uuid}_batch_matmul_sparsity.csv"), index_label='batched_matmul')
             torch.save(per_batch_gemm_op_sparsity_dict, os.path.join(SPARSEDIR, f"{uuid}_per_batch_gemm_op_sparsity_dict.pth"))
+
+            if model_args.attn_sparsity_only is True: # only apply to attention, x1_sparsity key applies to bmm1 and bmm2
+                bmm_df.x1_sparsity_mean.describe().to_csv(os.path.join(SPARSEDIR, f"{uuid}_attention_summary_over_mean_sparsity_of_all_layers.csv"))
 
     # Prediction
     if training_args.do_predict:
