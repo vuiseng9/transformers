@@ -51,6 +51,7 @@ from ...utils import (
 )
 from .configuration_bert import BertConfig
 from .sparsemax import Sparsemax
+from .sparsegen import Sparsegen_lin
 
 logger = logging.get_logger(__name__)
 
@@ -267,14 +268,24 @@ class BertSelfAttention(nn.Module):
 
         self.is_decoder = config.is_decoder
 
+        self.analyze_sparsity = False
+        
+        if hasattr(config, "use_sparsemax") or hasattr(config, "use_sparsegen_lin"):
+            if config.use_sparsemax and config.use_sparsegen_lin:
+                raise RuntimeError("use_sparsemax and use_sparsegen_lin are mutually exclusive")
+        
+        self.use_softmax_alternative = False
+        
         if hasattr(config, "use_sparsemax"):
-            self.use_sparsemax = config.use_sparsemax
-        else:
-            self.use_sparsemax = False
-        
-        if self.use_sparsemax:
-            self.sparsemax_fn = Sparsemax(dim=-1)
-        
+            if config.use_sparsemax:
+                self.use_softmax_alternative = True
+                self.softmax_alt_fn = Sparsemax(dim=-1)
+
+        if hasattr(config, "use_sparsegen_lin"):
+            if config.use_sparsegen_lin:
+                self.use_softmax_alternative = True
+                self.softmax_alt_fn = Sparsegen_lin(lam=config.sparsegen_lambda)
+
     def transpose_for_scores(self, x: torch.Tensor) -> torch.Tensor:
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(new_x_shape)
@@ -370,8 +381,8 @@ class BertSelfAttention(nn.Module):
             attention_scores = attention_scores + attention_mask
 
         # Normalize the attention scores to probabilities.
-        if self.use_sparsemax:
-            attention_probs = self.sparsemax_fn(attention_scores)
+        if self.use_softmax_alternative:
+            attention_probs = self.softmax_alt_fn(attention_scores)
         else:
             attention_probs = nn.functional.softmax(attention_scores, dim=-1)
 
