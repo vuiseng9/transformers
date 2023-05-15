@@ -120,10 +120,29 @@ class ModelArguments:
             )
         },
     )
+    prune_attn_by_mean: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "prune attention (output of softmax) in attention function by mean filtering (currently only support for BERT model)."
+            )
+        },
+    )
+    prune_attn_by_quantile: float = field(
+        default=0.0,
+        metadata={
+            "help": (
+                "prune attention (output of softmax) by quantile (currently only support for BERT model)."
+            )
+        },
+    )
 
     def __post_init__(self):
-        if self.sparsemax and self.sparsegen_lin:
-            raise RuntimeError("--sparsemax and --sparsegen_lin are mutually exclusive")
+        if (float(self.sparsemax) + float(self.sparsegen_lin) + float(self.prune_attn_by_mean) + self.prune_attn_by_quantile) > 1.0:
+            raise RuntimeError("--sparsemax, --sparsegen_lin, --prune_attn_by_mean and --prune_attn_by_quantile are mutually exclusive")
+        
+        if self.prune_attn_by_quantile < 0.0 or self.prune_attn_by_quantile > 1.0:
+            raise RuntimeError("--prune_attn_by_quantile must be between [0, 1]")
 
 @dataclass
 class DataTrainingArguments:
@@ -358,6 +377,9 @@ def main():
     config.use_sparsemax = model_args.sparsemax
     config.use_sparsegen_lin = model_args.sparsegen_lin    
     config.sparsegen_lambda = model_args.sparsegen_lambda
+    config.prune_attn_by_mean = model_args.prune_attn_by_mean
+    config.prune_attn_by_quantile = model_args.prune_attn_by_quantile
+
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,

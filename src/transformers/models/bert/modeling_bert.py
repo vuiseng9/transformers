@@ -270,12 +270,14 @@ class BertSelfAttention(nn.Module):
 
         self.analyze_sparsity = False
         
-        if hasattr(config, "use_sparsemax") or hasattr(config, "use_sparsegen_lin"):
-            if config.use_sparsemax and config.use_sparsegen_lin:
-                raise RuntimeError("use_sparsemax and use_sparsegen_lin are mutually exclusive")
+        if hasattr(config, "use_sparsemax") or hasattr(config, "use_sparsegen_lin") or hasattr(config, "prune_attn_by_mean") or hasattr(config, "prune_attn_by_quantile"):
+            if (float(config.use_sparsemax) + float(config.use_sparsegen_lin) + float(config.prune_attn_by_mean) + config.prune_attn_by_quantile) > 1.0:
+                raise RuntimeError("use_sparsemax, use_sparsegen_lin, prune_attn_by_mean and prune_attn_by_quantile are mutually exclusive")
         
         self.use_softmax_alternative = False
-        
+        self.prune_attn_by_mean = config.prune_attn_by_mean
+        self.prune_attn_by_quantile = config.prune_attn_by_quantile
+
         if hasattr(config, "use_sparsemax"):
             if config.use_sparsemax:
                 self.use_softmax_alternative = True
@@ -385,7 +387,13 @@ class BertSelfAttention(nn.Module):
             attention_probs = self.softmax_alt_fn(attention_scores)
         else:
             attention_probs = nn.functional.softmax(attention_scores, dim=-1)
-
+            if self.prune_attn_by_mean:
+                assert attention_scores.shape[0] == 1, "mean-filtering is only for batch size of 1"
+                attention_probs = torch.gt(attention_probs, attention_probs.mean(dim=-1, keepdim=True)) * attention_probs
+            if self.prune_attn_by_quantile > 0.0:
+                assert attention_scores.shape[0] == 1, "attn pruning by quantile is only for batch size of 1"
+                attention_probs = torch.gt(attention_probs, attention_probs.quantile(q=self.prune_attn_by_quantile, dim=-1, keepdim=True)) * attention_probs
+        
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
         attention_probs = self.dropout(attention_probs)
