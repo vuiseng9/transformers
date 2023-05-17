@@ -281,7 +281,7 @@ class BertSelfAttention(nn.Module):
         if hasattr(config, "use_sparsemax"):
             if config.use_sparsemax:
                 self.use_softmax_alternative = True
-                self.softmax_alt_fn = Sparsemax(dim=-1)
+                self.softmax_alt_fn = Sparsemax(dim=-1, lmbd=config.sparsemax_lambda)
 
         if hasattr(config, "use_sparsegen_lin"):
             if config.use_sparsegen_lin:

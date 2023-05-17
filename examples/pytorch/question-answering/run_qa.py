@@ -104,6 +104,14 @@ class ModelArguments:
             )
         },
     )
+    sparsemax_lambda: float = field(
+        default=0.0,
+        metadata={
+            "help": (
+                "use regularization factor (lambda) for sparsemax function, this is equivalent to sparsegen_lin (currently only support for BERT model)."
+            )
+        },
+    )
     sparsegen_lin: bool = field(
         default=False,
         metadata={
@@ -375,6 +383,7 @@ def main():
         use_auth_token=True if model_args.use_auth_token else None,
     )
     config.use_sparsemax = model_args.sparsemax
+    config.sparsemax_lambda = model_args.sparsemax_lambda
     config.use_sparsegen_lin = model_args.sparsegen_lin    
     config.sparsegen_lambda = model_args.sparsegen_lambda
     config.prune_attn_by_mean = model_args.prune_attn_by_mean

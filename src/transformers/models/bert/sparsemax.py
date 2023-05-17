@@ -18,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Sparsemax(nn.Module):
     """Sparsemax function."""
 
-    def __init__(self, dim=None):
+    def __init__(self, dim=None, lmbd=0.0):
         """Initialize sparsemax activation
         
         Args:
@@ -27,6 +27,10 @@ class Sparsemax(nn.Module):
         super(Sparsemax, self).__init__()
 
         self.dim = -1 if dim is None else dim
+        self.lmbd = lmbd
+        self.gamma = 1.0-self.lmbd
+        if self.lmbd >= 1.0:
+            raise ValueError("Sparsemax regularizer lambda must be lower than 1.0")
 
     def forward(self, input):
         """Forward function.
@@ -47,6 +51,8 @@ class Sparsemax(nn.Module):
         dim = 1
 
         number_of_logits = input.size(dim)
+
+        input = input/self.gamma
 
         # Translate input by max for numerical stability
         input = input - torch.max(input, dim=dim, keepdim=True)[0].expand_as(input)
@@ -90,4 +96,4 @@ class Sparsemax(nn.Module):
         sum = torch.sum(grad_output * nonzeros, dim=dim) / torch.sum(nonzeros, dim=dim)
         self.grad_input = nonzeros * (grad_output - sum.expand_as(grad_output))
 
-        return self.grad_input
+        return self.grad_input/self.gamma
