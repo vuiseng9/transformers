@@ -88,6 +88,10 @@ class ModelArguments:
             )
         },
     )
+    softmax_exp2: bool = field(
+        default=False,
+        metadata={"help": "use base2 softmax in MHA (currently only support for BERT model)"},
+    )
     analyze_sparsity: bool = field(
         default=False,
         metadata={"help": "generate sparsity distribution report for each dot product, only works in eval mode"},
@@ -146,8 +150,12 @@ class ModelArguments:
     )
 
     def __post_init__(self):
-        if (float(self.sparsemax) + float(self.sparsegen_lin) + float(self.prune_attn_by_mean) + self.prune_attn_by_quantile) > 1.0:
-            raise RuntimeError("--sparsemax, --sparsegen_lin, --prune_attn_by_mean and --prune_attn_by_quantile are mutually exclusive")
+        if (float(self.softmax_exp2) + float(self.sparsemax) + float(self.sparsegen_lin)) > 1.0:
+            raise RuntimeError("--softmax_exp2, --sparsemax, --sparsegen_lin are mutually exclusive")
+        
+        if self.sparsemax or self.sparsegen_lin:
+            if ((float(self.prune_attn_by_mean) + self.prune_attn_by_quantile)) > 0.0:
+                raise RuntimeError("--prune_attn_by_quantile cannot be used with --sparsemax, --sparsegen_lin, --prune_attn_by_mean")
         
         if self.prune_attn_by_quantile < 0.0 or self.prune_attn_by_quantile > 1.0:
             raise RuntimeError("--prune_attn_by_quantile must be between [0, 1]")
@@ -382,6 +390,7 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
+    config.softmax_exp2 = model_args.softmax_exp2
     config.use_sparsemax = model_args.sparsemax
     config.sparsemax_lambda = model_args.sparsemax_lambda
     config.use_sparsegen_lin = model_args.sparsegen_lin    

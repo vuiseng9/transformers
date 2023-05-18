@@ -14,6 +14,14 @@ import torch.nn as nn
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+class Softmax_exp2(nn.Module):
+    def __init__(self, dim=-1):
+        super(Softmax_exp2, self).__init__()
+        self.dim = -1
+    
+    def forward(self, input):
+        exp = torch.exp2(input)
+        return exp/exp.sum(dim=self.dim).unsqueeze(dim=self.dim)
 
 class Sparsemax(nn.Module):
     """Sparsemax function."""

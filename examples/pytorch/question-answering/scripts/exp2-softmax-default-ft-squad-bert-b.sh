@@ -14,8 +14,7 @@ CONDAENV=apr23-optimum
 
 NEPOCH=2
 LR=3e-5
-LAMBDA=-4.0
-RUNID=r${LAMBDA}-sparsemax-fp16-ft-squad-tuned-bert-b-${NEPOCH}eph-lr${LR}
+RUNID=exp2-softmax-ft-squad-bert-b-${NEPOCH}eph-lr${LR}
 
 OUTROOT=/data5/vchua/run/$CONDAENV/sparse-attn-act
 WORKDIR=/data5/vchua/dev/$CONDAENV/transformers/examples/pytorch/question-answering
@@ -34,12 +33,11 @@ cd $WORKDIR
 
 cmd="
 python run_qa.py \
-    --model_name_or_path vuiseng9/bert-base-uncased-squad \
+    --model_name_or_path bert-base-uncased \
     --dataset_name squad \
     --do_eval \
     --fp16 \
-    --sparsemax \
-    --sparsemax_lambda $LAMBDA \
+    --softmax_exp2 \
     --do_train \
     --learning_rate $LR \
     --num_train_epochs $NEPOCH \
@@ -51,7 +49,7 @@ python run_qa.py \
     --evaluation_strategy steps \
     --eval_steps 250 \
     --save_steps 1000 \
-    --save_total_limit 3 \
+    --save_total_limit 10 \
     --overwrite_output_dir \
     --run_name $RUNID \
     --output_dir $OUTDIR \

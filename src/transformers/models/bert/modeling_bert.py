@@ -50,7 +50,7 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_bert import BertConfig
-from .sparsemax import Sparsemax
+from .sparsemax import Sparsemax, Softmax_exp2
 from .sparsegen import Sparsegen_lin
 
 logger = logging.get_logger(__name__)
@@ -270,9 +270,13 @@ class BertSelfAttention(nn.Module):
 
         self.analyze_sparsity = False
         
-        if hasattr(config, "use_sparsemax") or hasattr(config, "use_sparsegen_lin") or hasattr(config, "prune_attn_by_mean") or hasattr(config, "prune_attn_by_quantile"):
-            if (float(config.use_sparsemax) + float(config.use_sparsegen_lin) + float(config.prune_attn_by_mean) + config.prune_attn_by_quantile) > 1.0:
-                raise RuntimeError("use_sparsemax, use_sparsegen_lin, prune_attn_by_mean and prune_attn_by_quantile are mutually exclusive")
+        if hasattr(config, "softmax_exp2") or hasattr(config, "use_sparsemax") or hasattr(config, "use_sparsegen_lin") or hasattr(config, "prune_attn_by_mean") or hasattr(config, "prune_attn_by_quantile"):
+            if (float(config.softmax_exp2) + float(config.use_sparsemax) + float(config.use_sparsegen_lin))> 1.0:
+                raise RuntimeError("softmax_exp2, use_sparsemax, use_sparsegen_lin are mutually exclusive")
+
+            if config.use_sparsemax or config.use_sparsegen_lin:
+                if (int(config.prune_attn_by_mean) + config.prune_attn_by_quantile) > 0.0:
+                    raise RuntimeError("prune_attn_by_mean or prune_attn_by_quantile cannot be used together with use_sparsemax or use_sparsegen_lin")
         
         self.use_softmax_alternative = False
         self.prune_attn_by_mean = config.prune_attn_by_mean
@@ -287,6 +291,11 @@ class BertSelfAttention(nn.Module):
             if config.use_sparsegen_lin:
                 self.use_softmax_alternative = True
                 self.softmax_alt_fn = Sparsegen_lin(lam=config.sparsegen_lambda)
+
+        if hasattr(config, "softmax_exp2"):
+            if config.softmax_exp2:
+                self.use_softmax_alternative = True
+                self.softmax_alt_fn = Softmax_exp2()
 
     def transpose_for_scores(self, x: torch.Tensor) -> torch.Tensor:
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
@@ -387,12 +396,13 @@ class BertSelfAttention(nn.Module):
             attention_probs = self.softmax_alt_fn(attention_scores)
         else:
             attention_probs = nn.functional.softmax(attention_scores, dim=-1)
-            if self.prune_attn_by_mean:
-                assert attention_scores.shape[0] == 1, "mean-filtering is only for batch size of 1"
-                attention_probs = torch.gt(attention_probs, attention_probs.mean(dim=-1, keepdim=True)) * attention_probs
-            if self.prune_attn_by_quantile > 0.0:
-                assert attention_scores.shape[0] == 1, "attn pruning by quantile is only for batch size of 1"
-                attention_probs = torch.gt(attention_probs, attention_probs.quantile(q=self.prune_attn_by_quantile, dim=-1, keepdim=True)) * attention_probs
+
+        if self.prune_attn_by_mean:
+            assert attention_scores.shape[0] == 1, "mean-filtering is only for batch size of 1"
+            attention_probs = torch.gt(attention_probs, attention_probs.mean(dim=-1, keepdim=True)) * attention_probs
+        if self.prune_attn_by_quantile > 0.0:
+            assert attention_scores.shape[0] == 1, "attn pruning by quantile is only for batch size of 1"
+            attention_probs = torch.gt(attention_probs, attention_probs.quantile(q=self.prune_attn_by_quantile, dim=-1, keepdim=True)) * attention_probs
         
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.

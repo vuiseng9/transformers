@@ -14,7 +14,7 @@ CONDAENV=apr23-optimum
 
 NEPOCH=2
 LR=3e-5
-RUNID=baseline-ft-squad-bert-b-${NEPOCH}eph-lr${LR}
+RUNID=rerun-baseline-ft-squad-bert-b-${NEPOCH}eph-lr${LR}
 
 OUTROOT=/data5/vchua/run/$CONDAENV/sparse-attn-act
 WORKDIR=/data5/vchua/dev/$CONDAENV/transformers/examples/pytorch/question-answering
