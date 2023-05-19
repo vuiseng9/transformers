@@ -398,10 +398,12 @@ class BertSelfAttention(nn.Module):
             attention_probs = nn.functional.softmax(attention_scores, dim=-1)
 
         if self.prune_attn_by_mean:
-            assert attention_scores.shape[0] == 1, "mean-filtering is only for batch size of 1"
+            if self.analyze_sparsity is not True:
+                assert attention_scores.shape[0] == 1, "mean-filtering is only for batch size of 1"
             attention_probs = torch.gt(attention_probs, attention_probs.mean(dim=-1, keepdim=True)) * attention_probs
         if self.prune_attn_by_quantile > 0.0:
-            assert attention_scores.shape[0] == 1, "attn pruning by quantile is only for batch size of 1"
+            if self.analyze_sparsity is True:
+                assert attention_scores.shape[0] == 1, "attn pruning by quantile is only for batch size of 1"
             attention_probs = torch.gt(attention_probs, attention_probs.quantile(q=self.prune_attn_by_quantile, dim=-1, keepdim=True)) * attention_probs
         
         # This is actually dropping out entire tokens to attend to, which might
