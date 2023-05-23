@@ -683,8 +683,8 @@ def main():
             raise ValueError("--analyze_sparsity is designed with the intent of batch size = 1")
 
         from collections import defaultdict, OrderedDict
-        from vscutils import annotate_module_static_attr, create_sparsity_analyzer_hook, calc_sparsity_by_head
-
+        from transformers.vscutils import annotate_module_static_attr, create_sparsity_analyzer_hook, calc_sparsity_by_head
+        
         per_linear_op_sparsity_dict = OrderedDict()
         per_batch_gemm_op_sparsity_dict = OrderedDict()
 

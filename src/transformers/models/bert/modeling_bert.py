@@ -50,8 +50,8 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_bert import BertConfig
-from .sparsemax import Sparsemax, Softmax_exp2
-from .sparsegen import Sparsegen_lin
+from ...sparsemax import Sparsemax, Softmax_exp2
+from ...sparsegen import Sparsegen_lin
 
 logger = logging.get_logger(__name__)
 
