@@ -36,7 +36,7 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_vit import ViTConfig
-
+from ...sparsemax import Sparsemax, Softmax_exp2
 
 logger = logging.get_logger(__name__)
 
@@ -202,6 +202,31 @@ class ViTSelfAttention(nn.Module):
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+        self.analyze_sparsity = False
+        
+        if hasattr(config, "softmax_exp2") or hasattr(config, "use_sparsemax") or hasattr(config, "prune_attn_by_mean") or hasattr(config, "prune_attn_by_quantile"):
+            if (float(config.softmax_exp2) + float(config.use_sparsemax))> 1.0:
+                raise RuntimeError("softmax_exp2, use_sparsemax are mutually exclusive")
+
+            if config.use_sparsemax:
+                if (int(config.prune_attn_by_mean) + config.prune_attn_by_quantile) > 0.0:
+                    raise RuntimeError("prune_attn_by_mean or prune_attn_by_quantile cannot be used together with use_sparsemax")
+        
+        self.use_softmax_alternative = False
+        self.prune_attn_by_mean = config.prune_attn_by_mean
+        self.prune_attn_by_quantile = config.prune_attn_by_quantile
+
+        if hasattr(config, "use_sparsemax"):
+            if config.use_sparsemax:
+                self.use_softmax_alternative = True
+                self.softmax_alt_fn = Sparsemax(dim=-1, lmbd=config.sparsemax_lambda)
+
+        if hasattr(config, "softmax_exp2"):
+            if config.softmax_exp2:
+                self.use_softmax_alternative = True
+                self.softmax_alt_fn = Softmax_exp2()
+
+
     def transpose_for_scores(self, x: torch.Tensor) -> torch.Tensor:
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(new_x_shape)
@@ -218,12 +243,42 @@ class ViTSelfAttention(nn.Module):
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
+        if self.analyze_sparsity and hasattr(self, "sparsity_fn") and hasattr(self, "sparsity_registry") and self.attn_sparsity_only is False:
+            bmm_key = self.full_name+'.bmm1'
+            
+            q_sparsity, q_shape = self.sparsity_fn(query_layer, wt_shape=True)
+            self.sparsity_registry[bmm_key]['x1_sparsity'].append(q_sparsity)
+            self.sparsity_registry[bmm_key]['x1_shape'].append(q_shape)
+                        
+            k_sparsity, k_shape = self.sparsity_fn(key_layer, wt_shape=True)
+            self.sparsity_registry[bmm_key]['x2_sparsity'].append(k_sparsity)
+            self.sparsity_registry[bmm_key]['x2_shape'].append(k_shape)
+
+            qk_sparsity, qk_shape = self.sparsity_fn(attention_scores, wt_shape=True)
+            self.sparsity_registry[bmm_key]['y_sparsity'].append(qk_sparsity)
+            self.sparsity_registry[bmm_key]['y_shape'].append(qk_shape)
+
+            # print(f"Q  : {str(q_shape):20}, {q_sparsity:.4f}% | {bmm_key}")
+            # print(f"K  : {str(k_shape):20}, {k_sparsity:.4f}% | {bmm_key}")
+            # print(f"QKT: {str(qk_shape):20}, {qk_sparsity:.4f}% | {bmm_key}")
 
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
 
         # Normalize the attention scores to probabilities.
-        attention_probs = nn.functional.softmax(attention_scores, dim=-1)
+        if self.use_softmax_alternative:
+            attention_probs = self.softmax_alt_fn(attention_scores)
+        else:
+            attention_probs = nn.functional.softmax(attention_scores, dim=-1)
 
+        if self.prune_attn_by_mean:
+            if self.analyze_sparsity is not True:
+                assert attention_scores.shape[0] == 1, "mean-filtering is only for batch size of 1"
+            attention_probs = torch.gt(attention_probs, attention_probs.mean(dim=-1, keepdim=True)) * attention_probs
+        if self.prune_attn_by_quantile > 0.0:
+            if self.analyze_sparsity is True:
+                assert attention_scores.shape[0] == 1, "attn pruning by quantile is only for batch size of 1"
+            attention_probs = torch.gt(attention_probs, attention_probs.quantile(q=self.prune_attn_by_quantile, dim=-1, keepdim=True)) * attention_probs
+        
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
         attention_probs = self.dropout(attention_probs)
@@ -233,6 +288,25 @@ class ViTSelfAttention(nn.Module):
             attention_probs = attention_probs * head_mask
 
         context_layer = torch.matmul(attention_probs, value_layer)
+        if self.analyze_sparsity and hasattr(self, "sparsity_fn") and hasattr(self, "sparsity_registry"):
+            bmm_key = self.full_name+'.bmm2'
+
+            as_sparsity, as_shape = self.sparsity_fn(attention_probs, wt_shape=True)
+            self.sparsity_registry[bmm_key]['x1_sparsity'].append(as_sparsity)
+            self.sparsity_registry[bmm_key]['x1_shape'].append(as_shape)
+
+            if self.attn_sparsity_only is False:
+                v_sparsity, v_shape = self.sparsity_fn(value_layer, wt_shape=True)
+                self.sparsity_registry[bmm_key]['x2_sparsity'].append(v_sparsity)
+                self.sparsity_registry[bmm_key]['x2_shape'].append(v_shape)
+
+                c_sparsity, c_shape = self.sparsity_fn(context_layer, wt_shape=True)
+                self.sparsity_registry[bmm_key]['y_sparsity'].append(c_sparsity)
+                self.sparsity_registry[bmm_key]['y_shape'].append(c_shape)
+
+            # print(f"AS : {str(as_shape):20}, {as_sparsity:.4f}% | {bmm_key}")
+            # print(f"V  : {str(v_shape):20}, {v_sparsity:.4f}% | {bmm_key}")
+            # print(f"C  : {str(v_shape):20}, {v_sparsity:.4f}% | {bmm_key}")
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)

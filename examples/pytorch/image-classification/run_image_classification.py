@@ -155,6 +155,61 @@ class ModelArguments:
         default=False,
         metadata={"help": "Will enable to load a pretrained model whose head dimensions are different."},
     )
+    softmax_exp2: bool = field(
+        default=False,
+        metadata={"help": "use base2 softmax in MHA (currently only support for BERT and ViT model)"},
+    )
+    sparsemax: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "use sparsemax in attention function (currently only support for BERT and ViT model)."
+            )
+        },
+    )
+    sparsemax_lambda: float = field(
+        default=0.0,
+        metadata={
+            "help": (
+                "use regularization factor (lambda) for sparsemax function, this is equivalent to sparsegen_lin (currently only support for BERT and ViT model)."
+            )
+        },
+    )
+    analyze_sparsity: bool = field(
+        default=False,
+        metadata={"help": "generate sparsity distribution report for each dot product, only works in eval mode"},
+    )
+    attn_sparsity_only: bool = field(
+        default=False,
+        metadata={"help": "dependent on --analyze_sparsity, ignore all sparsity analysis except attention scores"},
+    )
+    prune_attn_by_mean: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "prune attention (output of softmax) in attention function by mean filtering (currently only support for BERT and ViT model)."
+            )
+        },
+    )
+    prune_attn_by_quantile: float = field(
+        default=0.0,
+        metadata={
+            "help": (
+                "prune attention (output of softmax) by quantile (currently only support for BERT & ViT model)."
+            )
+        },
+    )
+
+    def __post_init__(self):
+        if (float(self.softmax_exp2) + float(self.sparsemax)) > 1.0:
+            raise RuntimeError("--softmax_exp2, --sparsemax are mutually exclusive")
+        
+        if self.sparsemax:
+            if ((float(self.prune_attn_by_mean) + self.prune_attn_by_quantile)) > 0.0:
+                raise RuntimeError("--prune_attn_by_quantile cannot be used with --sparsemax, --prune_attn_by_mean")
+        
+        if self.prune_attn_by_quantile < 0.0 or self.prune_attn_by_quantile > 1.0:
+            raise RuntimeError("--prune_attn_by_quantile must be between [0, 1]")
 
 
 def collate_fn(examples):
@@ -274,6 +329,11 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
+    config.softmax_exp2 = model_args.softmax_exp2
+    config.use_sparsemax = model_args.sparsemax
+    config.sparsemax_lambda = model_args.sparsemax_lambda
+    config.prune_attn_by_mean = model_args.prune_attn_by_mean
+    config.prune_attn_by_quantile = model_args.prune_attn_by_quantile
     model = AutoModelForImageClassification.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -341,6 +401,53 @@ def main():
         # Set the validation transforms
         dataset["validation"].set_transform(val_transforms)
 
+    if training_args.do_eval and model_args.analyze_sparsity:
+
+        if training_args.eval_batch_size > 1:
+            raise ValueError("--analyze_sparsity is designed with the intent of batch size = 1")
+
+        from collections import defaultdict, OrderedDict
+        from transformers.vscutils import annotate_module_static_attr, create_sparsity_analyzer_hook, calc_sparsity_by_head
+        
+        per_linear_op_sparsity_dict = OrderedDict()
+        per_batch_gemm_op_sparsity_dict = OrderedDict()
+
+        annotate_module_static_attr(model, family_name="model")
+        modtype_to_modlist = defaultdict(list)
+        modname_to_modtype = OrderedDict()
+        modname_to_module = OrderedDict()
+
+        for _, m in model.named_modules():
+            modtype_to_modlist[m.class_name].append(f"{m.last_name}.{m.first_name}")
+            modname_to_modtype[m.full_name] = m.class_name
+            modname_to_module[m.full_name] = m
+
+        if model_args.attn_sparsity_only is False:
+            denseoi_layers = []
+            hooklist = []
+            for layer in modtype_to_modlist['Linear']:
+                if 'encoder' in layer:
+                    denseoi_layers.append(layer)
+
+                    mod = modname_to_module[layer]
+                    hooklist.append(
+                        mod.register_forward_hook(
+                            create_sparsity_analyzer_hook(mod, per_linear_op_sparsity_dict)
+                        )
+                    )
+
+        # NOTE: hardcoding
+        attn_module_class = 'ViTSelfAttention'
+        for each_attn in modtype_to_modlist[attn_module_class]:
+            attn_mod = modname_to_module[each_attn]
+            attn_mod.analyze_sparsity = model_args.analyze_sparsity # although it will always be true if the program gets here
+            attn_mod.attn_sparsity_only = model_args.attn_sparsity_only
+            attn_mod.sparsity_fn = calc_sparsity_by_head
+            attn_mod.sparsity_registry = per_batch_gemm_op_sparsity_dict
+            if model_args.attn_sparsity_only is False:
+                attn_mod.sparsity_registry[each_attn+'.bmm1'] = defaultdict(list)
+            attn_mod.sparsity_registry[each_attn+'.bmm2'] = defaultdict(list)
+
     # Initalize our trainer
     trainer = Trainer(
         model=model,
@@ -370,6 +477,67 @@ def main():
         metrics = trainer.evaluate()
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
+
+        if model_args.analyze_sparsity:
+            import pandas as pd
+            import uuid
+            from functools import partial
+
+            def check_and_return_unique_entry(row, colname):
+                # assert len(pd.Series(row[colname]).unique()) == 1, "{} shape of {} must be unique".format(colname, row)
+                # return pd.Series(row[colname]).unique()[0]
+                return tuple(np.array(row[colname]).mean(axis=0).astype(int))
+
+            def summarize_sparsity(row, colname):
+                return_keys = ['min','max', '50%', 'mean', 'std']
+                summary = pd.Series(row[colname]).describe()
+                for k in return_keys:
+                    row[f'{colname}_{k}'] = summary[k]
+                return row
+
+            if model_args.attn_sparsity_only is False:
+                linear_df = pd.DataFrame.from_dict(per_linear_op_sparsity_dict).T
+                for shape_col in ['x_shape', 'y_shape']:
+                    linear_df[shape_col] = linear_df.apply(partial(check_and_return_unique_entry, colname=shape_col), axis=1)
+                for sparsity_col in ['x_sparsity', 'y_sparsity']:
+                    linear_df = linear_df.apply(partial(summarize_sparsity, colname=sparsity_col), axis=1).drop(columns=[sparsity_col])
+
+            bmm_df = pd.DataFrame.from_dict(per_batch_gemm_op_sparsity_dict).T
+            shape_col_list = ['x1_shape', 'x2_shape', 'y_shape']
+            sparsity_col_list = ['x1_sparsity', 'x2_sparsity', 'y_sparsity']
+            if model_args.attn_sparsity_only is True:
+                shape_col_list = ['x1_shape']
+                sparsity_col_list = ['x1_sparsity']
+            for shape_col in shape_col_list:
+                bmm_df[shape_col] = bmm_df.apply(partial(check_and_return_unique_entry, colname=shape_col), axis=1)
+            for sparsity_col in sparsity_col_list:
+                bmm_df = bmm_df.apply(partial(summarize_sparsity, colname=sparsity_col), axis=1).drop(columns=[sparsity_col])
+
+            # Serialization
+            SPARSEDIR = os.path.join(training_args.output_dir, "sparsity_analysis")
+            if model_args.attn_sparsity_only is True:
+                SPARSEDIR += '_attn_only' 
+            uuid = str(uuid.uuid4())[:6]
+
+            os.makedirs(SPARSEDIR, exist_ok=True)
+
+            with open(os.path.join(SPARSEDIR, "readme.md"), "w") as f:
+                f.write(f"source: {model_args.model_name_or_path}")
+            with open(os.path.join(SPARSEDIR, "training_args.json"), "w") as f:
+                f.write(training_args.to_json_string())
+
+            config.to_json_file(os.path.join(SPARSEDIR, "config.json"))
+
+            import torch
+            if model_args.attn_sparsity_only is False:
+                linear_df.to_csv(os.path.join(SPARSEDIR, f"{uuid}_linear_matmul_sparsity.csv"), index_label='linear_matmul')
+                torch.save(per_linear_op_sparsity_dict, os.path.join(SPARSEDIR, f"{uuid}_per_linear_op_sparsity_dict.pth"))
+
+            bmm_df.to_csv(os.path.join(SPARSEDIR, f"{uuid}_batch_matmul_sparsity.csv"), index_label='batched_matmul')
+            torch.save(per_batch_gemm_op_sparsity_dict, os.path.join(SPARSEDIR, f"{uuid}_per_batch_gemm_op_sparsity_dict.pth"))
+
+            if model_args.attn_sparsity_only is True: # only apply to attention, x1_sparsity key applies to bmm1 and bmm2
+                bmm_df.x1_sparsity_mean.describe().to_csv(os.path.join(SPARSEDIR, f"{uuid}_attention_summary_over_mean_sparsity_of_all_layers.csv"))
 
     # Write model card and (optionally) push to hub
     kwargs = {
