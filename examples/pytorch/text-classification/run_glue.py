@@ -209,6 +209,14 @@ class ModelArguments:
             )
         },
     )
+    ibert_disable_integer_actfunc: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "disable integer-only activation function (IntLayerNorm, IntGELU, IntSoftmax) for IBERT."
+            )
+        },
+    )
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -371,6 +379,8 @@ def main():
         use_auth_token=True if model_args.use_auth_token else None,
     )
     config.quant_mode = model_args.ibert_quant_mode
+    config.quant_mode_actfunc = not model_args.ibert_disable_integer_actfunc
+
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,

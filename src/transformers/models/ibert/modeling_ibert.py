@@ -62,6 +62,7 @@ class IBertEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.quant_mode = config.quant_mode
+        self.quant_mode_actfunc = config.quant_mode_actfunc
         self.embedding_bit = 8
         self.embedding_act_bit = 16
         self.act_bit = 8
@@ -103,7 +104,7 @@ class IBertEmbeddings(nn.Module):
             config.hidden_size,
             eps=config.layer_norm_eps,
             output_bit=self.ln_output_bit,
-            quant_mode=self.quant_mode,
+            quant_mode=self.quant_mode_actfunc,
             force_dequant=config.force_dequant,
         )
         self.output_activation = QuantAct(self.act_bit, quant_mode=self.quant_mode)
@@ -183,6 +184,7 @@ class IBertSelfAttention(nn.Module):
                 f"heads ({config.num_attention_heads})"
             )
         self.quant_mode = config.quant_mode
+        self.quant_mode_actfunc = config.quant_mode_actfunc
         self.weight_bit = 8
         self.bias_bit = 32
         self.act_bit = 8
@@ -231,7 +233,7 @@ class IBertSelfAttention(nn.Module):
         if self.position_embedding_type != "absolute":
             raise ValueError("I-BERT only supports 'absolute' for `config.position_embedding_type`")
 
-        self.softmax = IntSoftmax(self.act_bit, quant_mode=self.quant_mode, force_dequant=config.force_dequant)
+        self.softmax = IntSoftmax(self.act_bit, quant_mode=self.quant_mode_actfunc, force_dequant=config.force_dequant)
 
     def transpose_for_scores(self, x):
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
@@ -320,6 +322,7 @@ class IBertSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.quant_mode = config.quant_mode
+        self.quant_mode_actfunc = config.quant_mode_actfunc
         self.act_bit = 8
         self.weight_bit = 8
         self.bias_bit = 32
@@ -340,7 +343,7 @@ class IBertSelfOutput(nn.Module):
             config.hidden_size,
             eps=config.layer_norm_eps,
             output_bit=self.ln_output_bit,
-            quant_mode=self.quant_mode,
+            quant_mode=self.quant_mode_actfunc,
             force_dequant=config.force_dequant,
         )
         self.output_activation = QuantAct(self.act_bit, quant_mode=self.quant_mode)
@@ -416,6 +419,7 @@ class IBertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.quant_mode = config.quant_mode
+        self.quant_mode_actfunc = config.quant_mode_actfunc
         self.act_bit = 8
         self.weight_bit = 8
         self.bias_bit = 32
@@ -430,7 +434,7 @@ class IBertIntermediate(nn.Module):
         )
         if config.hidden_act != "gelu":
             raise ValueError("I-BERT only supports 'gelu' for `config.hidden_act`")
-        self.intermediate_act_fn = IntGELU(quant_mode=self.quant_mode, force_dequant=config.force_dequant)
+        self.intermediate_act_fn = IntGELU(quant_mode=self.quant_mode_actfunc, force_dequant=config.force_dequant)
         self.output_activation = QuantAct(self.act_bit, quant_mode=self.quant_mode)
 
     def forward(self, hidden_states, hidden_states_scaling_factor):
@@ -450,6 +454,7 @@ class IBertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.quant_mode = config.quant_mode
+        self.quant_mode_actfunc = config.quant_mode_actfunc
         self.act_bit = 8
         self.weight_bit = 8
         self.bias_bit = 32
@@ -470,7 +475,7 @@ class IBertOutput(nn.Module):
             config.hidden_size,
             eps=config.layer_norm_eps,
             output_bit=self.ln_output_bit,
-            quant_mode=self.quant_mode,
+            quant_mode=self.quant_mode_actfunc,
             force_dequant=config.force_dequant,
         )
         self.output_activation = QuantAct(self.act_bit, quant_mode=self.quant_mode)
