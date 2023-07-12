@@ -17,7 +17,7 @@ LR=5e-7
 TASK=mrpc
 RUNID=baseline-ft-${TASK}-int8-IRoberta-b-${NEPOCH}eph-lr${LR}
 
-TASK_TUNED_MODEL=/data5/vchua/run/ibert-alt-softmax/mrpc/baseline-ft-mrpc-IRoberta-b-5eph-lr2e-5 #IBERT require FP32 fine-tuning on task for quantization statistics
+TASK_TUNED_MODEL=vuiseng9/baseline-ft-mrpc-IRoberta-b-unquantized #IBERT require FP32 fine-tuning on task as its codebase collects quantization statistics during fine-tuning
 
 OUTROOT=/data5/vchua/run/$CONDAENV/$TASK
 WORKDIR=/data5/vchua/dev/$CONDAENV/transformers/examples/pytorch/text-classification
