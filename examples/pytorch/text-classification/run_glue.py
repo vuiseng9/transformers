@@ -217,6 +217,20 @@ class ModelArguments:
             )
         },
     )
+    hweff_logexp_softmax: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "disable integer-only activation function (IntLayerNorm, IntGELU, IntSoftmax) for IBERT."
+            )
+        },
+    )
+
+    def __post_init__(self):
+        if self.ibert_disable_integer_actfunc is True and self.ibert_quant_mode is False:
+            raise ValueError("--ibert_disable_integer_actfunc can only be enabled with --ibert_quant_mode")
+        if self.hweff_logexp_softmax is True and self.ibert_quant_mode is False:
+            raise ValueError("--hweff_logexp_softmax can only be enabled with --ibert_quant_mode")
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -379,7 +393,18 @@ def main():
         use_auth_token=True if model_args.use_auth_token else None,
     )
     config.quant_mode = model_args.ibert_quant_mode
-    config.quant_mode_actfunc = not model_args.ibert_disable_integer_actfunc
+    if config.quant_mode is False:
+        config.quant_mode_actfunc = False
+        config.hweff_logexp_softmax_cfg = None
+    else:
+        config.quant_mode_actfunc = not model_args.ibert_disable_integer_actfunc
+        config.hweff_logexp_softmax_cfg = None
+        if model_args.hweff_logexp_softmax is True:
+            config.hweff_logexp_softmax_cfg = {
+                "round": True,
+                "N": 0
+            }
+            assert isinstance(config.hweff_logexp_softmax_cfg['N'], int), "N must be an integer"
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
@@ -590,7 +615,8 @@ def main():
 
             trainer.log_metrics("eval", metrics)
             trainer.save_metrics("eval", combined if task is not None and "mnli" in task else metrics)
-
+        config.to_json_file(os.path.join(training_args.output_dir, "eval_model_config.json"))
+        
     if training_args.do_predict:
         logger.info("*** Predict ***")
 

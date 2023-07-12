@@ -24,6 +24,7 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+from torch.autograd import Function
 
 from ...activations import gelu
 from ...modeling_outputs import (
@@ -175,6 +176,19 @@ class IBertEmbeddings(nn.Module):
         return position_ids.unsqueeze(0).expand(input_shape)
 
 
+class round_ste(Function):
+    """
+    Straight-through Estimator(STE) for torch.round()
+    """
+    @staticmethod
+    def forward(ctx, x):
+        return torch.round(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output.clone()
+    
+
 class IBertSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -185,6 +199,7 @@ class IBertSelfAttention(nn.Module):
             )
         self.quant_mode = config.quant_mode
         self.quant_mode_actfunc = config.quant_mode_actfunc
+        self.hweff_logexp_softmax_cfg = config.hweff_logexp_softmax_cfg
         self.weight_bit = 8
         self.bias_bit = 32
         self.act_bit = 8
@@ -262,42 +277,76 @@ class IBertSelfAttention(nn.Module):
             mixed_value_layer, mixed_value_layer_scaling_factor
         )
 
-        # Transpose
-        query_layer = self.transpose_for_scores(query_layer)
-        key_layer = self.transpose_for_scores(key_layer)
-        value_layer = self.transpose_for_scores(value_layer)
-
-        # Take the dot product between "query" and "key" to get the raw attention scores.
-        attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         scale = math.sqrt(self.attention_head_size)
-        attention_scores = attention_scores / scale
+        if self.hweff_logexp_softmax_cfg is not None:
+            query_layer_int = self.transpose_for_scores(query_layer/query_layer_scaling_factor)
+            key_layer_int = self.transpose_for_scores(key_layer/key_layer_scaling_factor)
+            value_layer_int = self.transpose_for_scores(value_layer/value_layer_scaling_factor)
+            attention_scores_int = torch.matmul(query_layer_int, key_layer_int.transpose(-1, -2))
+        else:
+            # Transpose
+            query_layer = self.transpose_for_scores(query_layer)
+            key_layer = self.transpose_for_scores(key_layer)
+            value_layer = self.transpose_for_scores(value_layer)
+
+            # Take the dot product between "query" and "key" to get the raw attention scores.
+            attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
+            attention_scores = attention_scores / scale
+            
         if self.quant_mode:
             attention_scores_scaling_factor = query_layer_scaling_factor * key_layer_scaling_factor / scale
         else:
             attention_scores_scaling_factor = None
 
+        # NOTE by VS: why mask? primarily for batching, unequal sequences will be equalized in length and padded token then will be mask out. 
         if attention_mask is not None:
-            # Apply the attention mask is (precomputed for all layers in IBertModel forward() function)
-            attention_scores = attention_scores + attention_mask
+            if self.hweff_logexp_softmax_cfg is not None:
+                attention_scores_int = attention_scores_int + attention_mask
+            else:
+                # Apply the attention mask is (precomputed for all layers in IBertModel forward() function)
+                attention_scores = attention_scores + attention_mask
 
-        # Normalize the attention scores to probabilities.
-        attention_probs, attention_probs_scaling_factor = self.softmax(
-            attention_scores, attention_scores_scaling_factor
-        )
+        if self.hweff_logexp_softmax_cfg is not None:
+            # [2^log2(attn)].V
+            N = self.hweff_logexp_softmax_cfg['N']
 
-        # This is actually dropping out entire tokens to attend to, which might
-        # seem a bit unusual, but is taken from the original Transformer paper.
-        attention_probs = self.dropout(attention_probs)
+            sa = attention_scores_scaling_factor
+            qa = attention_scores_int
+            sv = value_layer_scaling_factor
+            qv = value_layer_int
 
-        # Mask heads if we want to
-        if head_mask is not None:
-            attention_probs = attention_probs * head_mask
+            qa_max = qa.max(dim=-1, keepdim=True).values
+            qa_demax = qa-qa_max
+            d0 = torch.log2(torch.exp(sa*qa_demax).sum(dim=-1, keepdim=True))
 
-        context_layer = torch.matmul(attention_probs, value_layer)
-        if attention_probs_scaling_factor is not None:
-            context_layer_scaling_factor = attention_probs_scaling_factor * value_layer_scaling_factor
-        else:
+            s_prime = sa*torch.log2(torch.exp(torch.tensor(1)))                
+            s_doubleprime = sv / torch.pow(2, N+d0)
+
+            if self.hweff_logexp_softmax_cfg['round'] is True:
+                context_layer = torch.matmul(s_doubleprime * torch.pow(2, N+round_ste.apply(s_prime * qa_demax)), qv)
+            else:
+                context_layer = torch.matmul(s_doubleprime * torch.pow(2, N+(s_prime * qa_demax)), qv)
+
             context_layer_scaling_factor = None
+        else:
+            # Normalize the attention scores to probabilities.
+            attention_probs, attention_probs_scaling_factor = self.softmax(
+                attention_scores, attention_scores_scaling_factor
+            )
+
+            # This is actually dropping out entire tokens to attend to, which might
+            # seem a bit unusual, but is taken from the original Transformer paper.
+            attention_probs = self.dropout(attention_probs)
+
+            # Mask heads if we want to
+            if head_mask is not None:
+                attention_probs = attention_probs * head_mask
+
+            context_layer = torch.matmul(attention_probs, value_layer)
+            if attention_probs_scaling_factor is not None:
+                context_layer_scaling_factor = attention_probs_scaling_factor * value_layer_scaling_factor
+            else:
+                context_layer_scaling_factor = None
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
