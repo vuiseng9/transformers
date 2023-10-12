@@ -23,8 +23,9 @@ with profile(
     output = pipe("I love this!")
 
 print(output)
-report_strings = prof.key_averages().table(sort_by="cuda_time_total", max_name_column_width=40)
 
+report_strings = prof.key_averages().table(sort_by="cuda_time_total", max_name_column_width=40)
+print(report_strings)
 # , row_limit=10))
 def filter_report(single_newline_delimited_string):
     report_lines = single_newline_delimited_string.split('\n')
