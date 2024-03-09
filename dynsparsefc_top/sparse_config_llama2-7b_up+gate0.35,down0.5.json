@@ -1,0 +1,965 @@
+{
+  "pre": {
+    "model.layers.0.mlp.up_proj": {
+      "module_name": "model.layers.0.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.013617770746350288,
+      "version": "v2"
+    },
+    "model.layers.0.mlp.gate_proj": {
+      "module_name": "model.layers.0.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.013617770746350288,
+      "version": "v2"
+    },
+    "model.layers.0.mlp.down_proj": {
+      "module_name": "model.layers.0.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.000558356405235827,
+      "version": "v2"
+    },
+    "model.layers.1.mlp.up_proj": {
+      "module_name": "model.layers.1.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.027913548052310944,
+      "version": "v2"
+    },
+    "model.layers.1.mlp.gate_proj": {
+      "module_name": "model.layers.1.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.027913548052310944,
+      "version": "v2"
+    },
+    "model.layers.1.mlp.down_proj": {
+      "module_name": "model.layers.1.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.0016688257455825806,
+      "version": "v2"
+    },
+    "model.layers.2.mlp.up_proj": {
+      "module_name": "model.layers.2.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.04131292179226875,
+      "version": "v2"
+    },
+    "model.layers.2.mlp.gate_proj": {
+      "module_name": "model.layers.2.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.04131292179226875,
+      "version": "v2"
+    },
+    "model.layers.2.mlp.down_proj": {
+      "module_name": "model.layers.2.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.0031211108434945345,
+      "version": "v2"
+    },
+    "model.layers.3.mlp.up_proj": {
+      "module_name": "model.layers.3.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.05345677211880684,
+      "version": "v2"
+    },
+    "model.layers.3.mlp.gate_proj": {
+      "module_name": "model.layers.3.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.05345677211880684,
+      "version": "v2"
+    },
+    "model.layers.3.mlp.down_proj": {
+      "module_name": "model.layers.3.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.004881290253251791,
+      "version": "v2"
+    },
+    "model.layers.4.mlp.up_proj": {
+      "module_name": "model.layers.4.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.06258148699998856,
+      "version": "v2"
+    },
+    "model.layers.4.mlp.gate_proj": {
+      "module_name": "model.layers.4.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.06258148699998856,
+      "version": "v2"
+    },
+    "model.layers.4.mlp.down_proj": {
+      "module_name": "model.layers.4.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.0075800977647304535,
+      "version": "v2"
+    },
+    "model.layers.5.mlp.up_proj": {
+      "module_name": "model.layers.5.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.07123682647943497,
+      "version": "v2"
+    },
+    "model.layers.5.mlp.gate_proj": {
+      "module_name": "model.layers.5.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.07123682647943497,
+      "version": "v2"
+    },
+    "model.layers.5.mlp.down_proj": {
+      "module_name": "model.layers.5.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.010061349719762802,
+      "version": "v2"
+    },
+    "model.layers.6.mlp.up_proj": {
+      "module_name": "model.layers.6.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.07908820360898972,
+      "version": "v2"
+    },
+    "model.layers.6.mlp.gate_proj": {
+      "module_name": "model.layers.6.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.07908820360898972,
+      "version": "v2"
+    },
+    "model.layers.6.mlp.down_proj": {
+      "module_name": "model.layers.6.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.013014288619160652,
+      "version": "v2"
+    },
+    "model.layers.7.mlp.up_proj": {
+      "module_name": "model.layers.7.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.08493886142969131,
+      "version": "v2"
+    },
+    "model.layers.7.mlp.gate_proj": {
+      "module_name": "model.layers.7.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.08493886142969131,
+      "version": "v2"
+    },
+    "model.layers.7.mlp.down_proj": {
+      "module_name": "model.layers.7.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.015282533131539822,
+      "version": "v2"
+    },
+    "model.layers.8.mlp.up_proj": {
+      "module_name": "model.layers.8.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.08744753152132034,
+      "version": "v2"
+    },
+    "model.layers.8.mlp.gate_proj": {
+      "module_name": "model.layers.8.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.08744753152132034,
+      "version": "v2"
+    },
+    "model.layers.8.mlp.down_proj": {
+      "module_name": "model.layers.8.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.016642484813928604,
+      "version": "v2"
+    },
+    "model.layers.9.mlp.up_proj": {
+      "module_name": "model.layers.9.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.09038317948579788,
+      "version": "v2"
+    },
+    "model.layers.9.mlp.gate_proj": {
+      "module_name": "model.layers.9.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.09038317948579788,
+      "version": "v2"
+    },
+    "model.layers.9.mlp.down_proj": {
+      "module_name": "model.layers.9.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.01782013475894928,
+      "version": "v2"
+    },
+    "model.layers.10.mlp.up_proj": {
+      "module_name": "model.layers.10.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.09280183166265488,
+      "version": "v2"
+    },
+    "model.layers.10.mlp.gate_proj": {
+      "module_name": "model.layers.10.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.09280183166265488,
+      "version": "v2"
+    },
+    "model.layers.10.mlp.down_proj": {
+      "module_name": "model.layers.10.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.019345048815011978,
+      "version": "v2"
+    },
+    "model.layers.11.mlp.up_proj": {
+      "module_name": "model.layers.11.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.09685318917036057,
+      "version": "v2"
+    },
+    "model.layers.11.mlp.gate_proj": {
+      "module_name": "model.layers.11.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.09685318917036057,
+      "version": "v2"
+    },
+    "model.layers.11.mlp.down_proj": {
+      "module_name": "model.layers.11.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.02074442058801651,
+      "version": "v2"
+    },
+    "model.layers.12.mlp.up_proj": {
+      "module_name": "model.layers.12.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.10011621564626694,
+      "version": "v2"
+    },
+    "model.layers.12.mlp.gate_proj": {
+      "module_name": "model.layers.12.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.10011621564626694,
+      "version": "v2"
+    },
+    "model.layers.12.mlp.down_proj": {
+      "module_name": "model.layers.12.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.021746506914496422,
+      "version": "v2"
+    },
+    "model.layers.13.mlp.up_proj": {
+      "module_name": "model.layers.13.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.10337119549512863,
+      "version": "v2"
+    },
+    "model.layers.13.mlp.gate_proj": {
+      "module_name": "model.layers.13.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.10337119549512863,
+      "version": "v2"
+    },
+    "model.layers.13.mlp.down_proj": {
+      "module_name": "model.layers.13.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.0236500296741724,
+      "version": "v2"
+    },
+    "model.layers.14.mlp.up_proj": {
+      "module_name": "model.layers.14.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.10858535766601562,
+      "version": "v2"
+    },
+    "model.layers.14.mlp.gate_proj": {
+      "module_name": "model.layers.14.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.10858535766601562,
+      "version": "v2"
+    },
+    "model.layers.14.mlp.down_proj": {
+      "module_name": "model.layers.14.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.025050535798072815,
+      "version": "v2"
+    },
+    "model.layers.15.mlp.up_proj": {
+      "module_name": "model.layers.15.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.11345263570547104,
+      "version": "v2"
+    },
+    "model.layers.15.mlp.gate_proj": {
+      "module_name": "model.layers.15.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.11345263570547104,
+      "version": "v2"
+    },
+    "model.layers.15.mlp.down_proj": {
+      "module_name": "model.layers.15.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.027550723403692245,
+      "version": "v2"
+    },
+    "model.layers.16.mlp.up_proj": {
+      "module_name": "model.layers.16.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.12194626033306122,
+      "version": "v2"
+    },
+    "model.layers.16.mlp.gate_proj": {
+      "module_name": "model.layers.16.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.12194626033306122,
+      "version": "v2"
+    },
+    "model.layers.16.mlp.down_proj": {
+      "module_name": "model.layers.16.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.032017868012189865,
+      "version": "v2"
+    },
+    "model.layers.17.mlp.up_proj": {
+      "module_name": "model.layers.17.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.13020256161689758,
+      "version": "v2"
+    },
+    "model.layers.17.mlp.gate_proj": {
+      "module_name": "model.layers.17.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.13020256161689758,
+      "version": "v2"
+    },
+    "model.layers.17.mlp.down_proj": {
+      "module_name": "model.layers.17.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.03388842195272446,
+      "version": "v2"
+    },
+    "model.layers.18.mlp.up_proj": {
+      "module_name": "model.layers.18.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.13812892138957977,
+      "version": "v2"
+    },
+    "model.layers.18.mlp.gate_proj": {
+      "module_name": "model.layers.18.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.13812892138957977,
+      "version": "v2"
+    },
+    "model.layers.18.mlp.down_proj": {
+      "module_name": "model.layers.18.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.03551453724503517,
+      "version": "v2"
+    },
+    "model.layers.19.mlp.up_proj": {
+      "module_name": "model.layers.19.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.14279748499393463,
+      "version": "v2"
+    },
+    "model.layers.19.mlp.gate_proj": {
+      "module_name": "model.layers.19.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.14279748499393463,
+      "version": "v2"
+    },
+    "model.layers.19.mlp.down_proj": {
+      "module_name": "model.layers.19.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.036256153136491776,
+      "version": "v2"
+    },
+    "model.layers.20.mlp.up_proj": {
+      "module_name": "model.layers.20.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.14786146581172943,
+      "version": "v2"
+    },
+    "model.layers.20.mlp.gate_proj": {
+      "module_name": "model.layers.20.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.14786146581172943,
+      "version": "v2"
+    },
+    "model.layers.20.mlp.down_proj": {
+      "module_name": "model.layers.20.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.039794255048036575,
+      "version": "v2"
+    },
+    "model.layers.21.mlp.up_proj": {
+      "module_name": "model.layers.21.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.1524859517812729,
+      "version": "v2"
+    },
+    "model.layers.21.mlp.gate_proj": {
+      "module_name": "model.layers.21.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.1524859517812729,
+      "version": "v2"
+    },
+    "model.layers.21.mlp.down_proj": {
+      "module_name": "model.layers.21.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.040101658552885056,
+      "version": "v2"
+    },
+    "model.layers.22.mlp.up_proj": {
+      "module_name": "model.layers.22.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.1560126692056656,
+      "version": "v2"
+    },
+    "model.layers.22.mlp.gate_proj": {
+      "module_name": "model.layers.22.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.1560126692056656,
+      "version": "v2"
+    },
+    "model.layers.22.mlp.down_proj": {
+      "module_name": "model.layers.22.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.041792646050453186,
+      "version": "v2"
+    },
+    "model.layers.23.mlp.up_proj": {
+      "module_name": "model.layers.23.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.1603698432445526,
+      "version": "v2"
+    },
+    "model.layers.23.mlp.gate_proj": {
+      "module_name": "model.layers.23.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.1603698432445526,
+      "version": "v2"
+    },
+    "model.layers.23.mlp.down_proj": {
+      "module_name": "model.layers.23.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.042390044778585434,
+      "version": "v2"
+    },
+    "model.layers.24.mlp.up_proj": {
+      "module_name": "model.layers.24.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.16400791704654694,
+      "version": "v2"
+    },
+    "model.layers.24.mlp.gate_proj": {
+      "module_name": "model.layers.24.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.16400791704654694,
+      "version": "v2"
+    },
+    "model.layers.24.mlp.down_proj": {
+      "module_name": "model.layers.24.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.04343457892537117,
+      "version": "v2"
+    },
+    "model.layers.25.mlp.up_proj": {
+      "module_name": "model.layers.25.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.16819436848163605,
+      "version": "v2"
+    },
+    "model.layers.25.mlp.gate_proj": {
+      "module_name": "model.layers.25.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.16819436848163605,
+      "version": "v2"
+    },
+    "model.layers.25.mlp.down_proj": {
+      "module_name": "model.layers.25.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.045020658522844315,
+      "version": "v2"
+    },
+    "model.layers.26.mlp.up_proj": {
+      "module_name": "model.layers.26.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.17251364886760712,
+      "version": "v2"
+    },
+    "model.layers.26.mlp.gate_proj": {
+      "module_name": "model.layers.26.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.17251364886760712,
+      "version": "v2"
+    },
+    "model.layers.26.mlp.down_proj": {
+      "module_name": "model.layers.26.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.04780164733529091,
+      "version": "v2"
+    },
+    "model.layers.27.mlp.up_proj": {
+      "module_name": "model.layers.27.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.17685815691947937,
+      "version": "v2"
+    },
+    "model.layers.27.mlp.gate_proj": {
+      "module_name": "model.layers.27.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.17685815691947937,
+      "version": "v2"
+    },
+    "model.layers.27.mlp.down_proj": {
+      "module_name": "model.layers.27.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.05053538829088211,
+      "version": "v2"
+    },
+    "model.layers.28.mlp.up_proj": {
+      "module_name": "model.layers.28.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.18012861907482147,
+      "version": "v2"
+    },
+    "model.layers.28.mlp.gate_proj": {
+      "module_name": "model.layers.28.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.18012861907482147,
+      "version": "v2"
+    },
+    "model.layers.28.mlp.down_proj": {
+      "module_name": "model.layers.28.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.05451030284166336,
+      "version": "v2"
+    },
+    "model.layers.29.mlp.up_proj": {
+      "module_name": "model.layers.29.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.18251298367977142,
+      "version": "v2"
+    },
+    "model.layers.29.mlp.gate_proj": {
+      "module_name": "model.layers.29.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.18251298367977142,
+      "version": "v2"
+    },
+    "model.layers.29.mlp.down_proj": {
+      "module_name": "model.layers.29.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.058897197246551514,
+      "version": "v2"
+    },
+    "model.layers.30.mlp.up_proj": {
+      "module_name": "model.layers.30.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.18266654014587402,
+      "version": "v2"
+    },
+    "model.layers.30.mlp.gate_proj": {
+      "module_name": "model.layers.30.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.18266654014587402,
+      "version": "v2"
+    },
+    "model.layers.30.mlp.down_proj": {
+      "module_name": "model.layers.30.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.06672932207584381,
+      "version": "v2"
+    },
+    "model.layers.31.mlp.up_proj": {
+      "module_name": "model.layers.31.mlp.up_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.1660410761833191,
+      "version": "v2"
+    },
+    "model.layers.31.mlp.gate_proj": {
+      "module_name": "model.layers.31.mlp.gate_proj",
+      "target_sparsity": 0.35,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.1660410761833191,
+      "version": "v2"
+    },
+    "model.layers.31.mlp.down_proj": {
+      "module_name": "model.layers.31.mlp.down_proj",
+      "target_sparsity": 0.5,
+      "location": "pre",
+      "zero_point_type": "static",
+      "threshold_type": "static",
+      "zero_point": 0.0,
+      "threshold": 0.07407154887914658,
+      "version": "v2"
+    }
+  },
+  "post": {}
+}

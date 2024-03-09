@@ -203,6 +203,61 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed, k_embed
 
+import DynSparseFC
+
+class ActivationPruneLinear(nn.Linear):
+    def __init__(self, in_features, out_features, bias=True):
+        super().__init__(in_features, out_features, bias)
+        self.IC = in_features
+        self.OC = out_features
+        self.i_shape = (1, 1, self.IC)
+        self.out = torch.zeros(self.i_shape[:-1] + (self.OC,), dtype=torch.float32)
+        self.threshold = 0.0
+        self.zero_point = 0.0
+        self.sparse_execution = False
+        self.forward = self.dense_forward
+
+    def extra_repr(self):
+        return f"ic={self.in_features}, oc={self.out_features} ,bias={self.bias is not None}, threshold={self.threshold:.3f}, zero_point={self.zero_point:.3f}, sparse_exec={self.sparse_execution}"
+
+    def transpose_weight(self):
+        self.weight.data = self.weight.data.t().contiguous()
+
+    def to_sparse_forward(self):
+        if self.weight.shape[0] != self.IC:
+            self.transpose_weight()
+        self.sparse_execution = True
+        self.forward = self.sparse_forward
+
+    def to_dense_forward(self):
+        if self.weight.shape[0] != self.OC:
+            self.transpose_weight()
+        self.sparse_execution = False
+        self.forward = self.dense_forward
+
+    def dense_forward(self, input):
+        return torch.nn.functional.linear(input, self.weight, self.bias)
+
+    # def sparse_forward(self, input):
+    #     x_sparse = input.clone()
+    #     x_sparse[(input - self.zero_point).abs() <= self.threshold] = 0
+    #     return torch.nn.functional.linear(x_sparse, self.weight, self.bias)
+
+    def sparse_forward(self, x):
+        # IMPORTANT assumption self.weight must be laid out in IC, OC which is transposed of original
+        batch_size = (x.numel() // self.IC)
+        is_our_case = (batch_size == 1) #check if it is first token or second token case
+
+        if is_our_case is True:
+            if x.shape != self.i_shape:
+                self.i_shape = tuple(x.shape)
+                self.out = torch.zeros(self.i_shape[:-1] + (self.OC,), dtype=torch.float32)
+            ic_ratio = DynSparseFC.dynPruneLinear(x, self.weight, self.threshold, self.zero_point, self.out)
+            y = self.out
+        else:
+            y = torch.matmul(x, self.weight)
+        return y + self.bias if self.bias is not None else y
+    
 
 class LlamaMLP(nn.Module):
     def __init__(self, config):
@@ -210,9 +265,17 @@ class LlamaMLP(nn.Module):
         self.config = config
         self.hidden_size = config.hidden_size
         self.intermediate_size = config.intermediate_size
-        self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
-        self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
-        self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
+
+        is_dynamic_sparse = getattr(config, 'dynamic_sparse', False)
+        if is_dynamic_sparse is True:
+            self.gate_proj = ActivationPruneLinear(self.hidden_size, self.intermediate_size, bias=False)
+            self.up_proj = ActivationPruneLinear(self.hidden_size, self.intermediate_size, bias=False)
+            self.down_proj = ActivationPruneLinear(self.intermediate_size, self.hidden_size, bias=False)
+        else:
+            self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
+            self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
+            self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
+
         self.act_fn = ACT2FN[config.hidden_act]
 
     def forward(self, x):
